@@ -1,12 +1,12 @@
-import type { HistoryItem } from '../types';
+import type { VideoFile } from '../types';
 
 export const SAVE_LABEL = 'Download';
 
-function fileName(item: HistoryItem) {
+function fileName(item: VideoFile) {
   return `${item.title.replace(/[^\w -]+/g, '').trim().replace(/\s+/g, '-') || 'invitation'}.mp4`;
 }
 
-async function asFile(item: HistoryItem): Promise<File> {
+async function asFile(item: VideoFile): Promise<File> {
   const blob = await (await fetch(item.videoUrl)).blob();
   return new File([blob], fileName(item), { type: 'video/mp4' });
 }
@@ -15,7 +15,7 @@ async function asFile(item: HistoryItem): Promise<File> {
  * Uses the phone's share sheet (Web Share API: Android Chrome, iPhone Safari), so the MP4
  * itself goes to WhatsApp. On a computer, where file sharing isn't supported, it downloads instead.
  */
-export async function shareVideo(item: HistoryItem): Promise<string | void> {
+export async function shareVideo(item: VideoFile): Promise<string | void> {
   const file = await asFile(item);
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   if (nav.share && nav.canShare?.({ files: [file] })) {
@@ -30,7 +30,7 @@ export async function shareVideo(item: HistoryItem): Promise<string | void> {
   return 'This browser cannot share files directly, so the video was downloaded. Send it from WhatsApp → Attach → Document/Gallery.';
 }
 
-export async function saveVideo(item: HistoryItem): Promise<string> {
+export async function saveVideo(item: VideoFile): Promise<string> {
   triggerDownload(await asFile(item));
   return /iPhone|iPad/.test(navigator.userAgent)
     ? 'Downloaded to Files. To put it in Photos: Share → Save Video.'

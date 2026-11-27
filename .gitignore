@@ -16,3 +16,9 @@ worker/templates/*/preview.mp4
 worker/templates/rose_gold/background.mp4
 worker/templates/**/music.m4a
 worker/templates/**/*.mp3
+# generated (original) music for the new designs is fine to share
+!worker/templates/birthday_confetti/music.m4a
+!worker/templates/cradle_moonlight/music.m4a
+!worker/templates/babyshower_blush/music.m4a
+# half-rendered backgrounds
+*.part.mp4

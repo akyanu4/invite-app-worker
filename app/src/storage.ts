@@ -1,33 +1,42 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { HistoryItem, Settings } from './types';
+import type { HistoryItem } from './types';
 
-// Defaults can be baked in at build time, e.g. EXPO_PUBLIC_CLOUDINARY_CLOUD=yourcloud in a .env file.
-export const DEFAULT_SETTINGS: Settings = {
-  cloudName: process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD ?? '',
-  uploadPreset: process.env.EXPO_PUBLIC_CLOUDINARY_PRESET ?? 'invites_unsigned',
-  folder: process.env.EXPO_PUBLIC_CLOUDINARY_FOLDER ?? 'invites',
-  template: 'rose_gold',
-};
+const HISTORY_KEY = 'invite.history.v2';
+const DEVICE_KEY = 'invite.device';
+const SHOP_TOKEN = 'invite.shopToken';
+const ADMIN_TOKEN = 'invite.adminToken';
 
-const SETTINGS_KEY = 'invite.settings.v1';
-const HISTORY_KEY = 'invite.history.v1';
-
-export async function loadSettings(): Promise<Settings> {
+async function get(key: string) {
   try {
-    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+    return await AsyncStorage.getItem(key);
   } catch {
-    return DEFAULT_SETTINGS;
+    return null;
   }
 }
 
-export async function saveSettings(s: Settings): Promise<void> {
-  await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+/** A random id for this phone, so the server can limit how many videos one phone makes at once. */
+export async function deviceId(): Promise<string> {
+  const have = await get(DEVICE_KEY);
+  if (have) return have;
+  const id = 'd' + Array.from({ length: 20 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+  await AsyncStorage.setItem(DEVICE_KEY, id);
+  return id;
+}
+
+export const getShopToken = () => get(SHOP_TOKEN);
+export const getAdminToken = () => get(ADMIN_TOKEN);
+export async function setShopToken(t: string | null) {
+  if (t) await AsyncStorage.setItem(SHOP_TOKEN, t);
+  else await AsyncStorage.removeItem(SHOP_TOKEN);
+}
+export async function setAdminToken(t: string | null) {
+  if (t) await AsyncStorage.setItem(ADMIN_TOKEN, t);
+  else await AsyncStorage.removeItem(ADMIN_TOKEN);
 }
 
 export async function loadHistory(): Promise<HistoryItem[]> {
+  const raw = await get(HISTORY_KEY);
   try {
-    const raw = await AsyncStorage.getItem(HISTORY_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -36,7 +45,7 @@ export async function loadHistory(): Promise<HistoryItem[]> {
 
 export async function addHistory(item: HistoryItem): Promise<HistoryItem[]> {
   const list = (await loadHistory()).filter((h) => h.id !== item.id);
-  const next = [item, ...list].slice(0, 30);
+  const next = [item, ...list].slice(0, 50);
   await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
   return next;
 }

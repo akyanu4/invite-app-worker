@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ActivityIndicator, Image, Pressable, StyleProp, Text, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleProp, Text, TextInput, View, ViewStyle } from 'react-native';
 import { C, F, s } from './theme';
 import type { TemplateInfo } from './types';
 
@@ -157,6 +157,116 @@ export function DesignChip(props: { design: TemplateInfo; onChange?: () => void 
           <Text style={{ fontFamily: F.semi, fontSize: 15, color: C.maroon, padding: 6 }}>Change</Text>
         </Pressable>
       )}
+    </View>
+  );
+}
+
+/** Small pill used for filters. */
+export function Chip(props: { label: string; on: boolean; onPress: () => void; icon?: IconName }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: props.on }}
+      onPress={props.onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 34,
+        paddingHorizontal: 14,
+        borderRadius: 17,
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: props.on ? C.maroon : C.line,
+        backgroundColor: props.on ? C.maroon : pressed ? C.line : C.surface,
+      })}
+    >
+      {props.icon && <Ionicons name={props.icon} size={15} color={props.on ? '#fff' : C.muted} style={{ marginRight: 6 }} />}
+      <Text style={{ fontFamily: F.semi, fontSize: 13, color: props.on ? '#fff' : C.ink }}>{props.label}</Text>
+    </Pressable>
+  );
+}
+
+/** Two or three side-by-side choices with a short description each. */
+export function Choice<T extends string>(props: {
+  value: T;
+  options: { value: T; title: string; note?: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <View style={{ flexDirection: 'row' }}>
+      {props.options.map((o, i) => {
+        const on = o.value === props.value;
+        return (
+          <Pressable
+            key={o.value}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: on }}
+            onPress={() => props.onChange(o.value)}
+            style={{
+              flex: 1,
+              marginRight: i < props.options.length - 1 ? 10 : 0,
+              padding: 12,
+              borderRadius: 12,
+              borderWidth: on ? 2 : 1,
+              borderColor: on ? C.maroon : C.line,
+              backgroundColor: on ? C.maroonSoft : C.surface,
+            }}
+          >
+            <View style={s.row}>
+              <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? C.maroon : C.faint} />
+              <Text style={{ fontFamily: F.semi, fontSize: 15, color: C.ink, marginLeft: 6 }}>{o.title}</Text>
+            </View>
+            {!!o.note && <Text style={[s.small, { marginTop: 4 }]}>{o.note}</Text>}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Labelled text box. */
+export function Field(props: {
+  label: string;
+  value: string;
+  hint?: string;
+  caps?: boolean;
+  onChange: (v: string) => void;
+  secure?: boolean;
+  keyboard?: 'default' | 'phone-pad' | 'number-pad';
+  autoCap?: 'none' | 'words' | 'characters' | 'sentences';
+  note?: string;
+}) {
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={s.label}>{props.label}</Text>
+      <TextInput
+        style={s.input}
+        value={props.value}
+        placeholder={props.hint}
+        placeholderTextColor={C.faint}
+        secureTextEntry={props.secure}
+        keyboardType={props.keyboard ?? 'default'}
+        autoCapitalize={props.autoCap ?? (props.caps ? 'characters' : 'words')}
+        autoCorrect={false}
+        onChangeText={props.onChange}
+      />
+      {!!props.note && <Text style={[s.small, { marginTop: 4 }]}>{props.note}</Text>}
+    </View>
+  );
+}
+
+/** Coloured status label. */
+export function Badge(props: { label: string; tone: 'gold' | 'green' | 'red' | 'grey' }) {
+  const map = {
+    gold: [C.goldSoft, '#7A5A1E'],
+    green: ['#E3F1E8', C.success],
+    red: ['#F8E4E2', C.danger],
+    grey: [C.line, C.muted],
+  } as const;
+  const [bg, fg] = map[props.tone];
+  return (
+    <View style={{ backgroundColor: bg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}>
+      <Text style={{ fontFamily: F.semi, fontSize: 12, color: fg }}>{props.label}</Text>
     </View>
   );
 }

@@ -9,30 +9,32 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { fetchTemplates } from './src/cloudinary';
-import { DEFAULT_FIELDS, inviteTitle } from './src/fields';
+import { BUNDLED_CATEGORIES, getCatalog, getConfig, getMe } from './src/api';
+import { inviteTitle, startFields } from './src/fields';
+import { AccountScreen } from './src/screens/AccountScreen';
+import { AdminScreen } from './src/screens/AdminScreen';
 import { CardScreen } from './src/screens/CardScreen';
 import { DesignScreen } from './src/screens/DesignScreen';
 import { DetailsScreen } from './src/screens/DetailsScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ProgressScreen, type Request } from './src/screens/ProgressScreen';
 import { ResultScreen } from './src/screens/ResultScreen';
-import { SettingsScreen } from './src/screens/SettingsScreen';
 import { TemplateScreen } from './src/screens/TemplateScreen';
-import { addHistory, loadHistory, loadSettings, removeHistory, saveSettings } from './src/storage';
+import { addHistory, getAdminToken, getShopToken, loadHistory, removeHistory, setShopToken } from './src/storage';
 import { C } from './src/theme';
-import type { Fields, HistoryItem, InviteEvent, Settings, TemplateInfo } from './src/types';
+import type { AppConfig, Category, Fields, HistoryItem, InviteEvent, ShopUser, TemplateInfo } from './src/types';
 
 // A small screen switch; the app has a handful of screens, so no navigation library is needed.
 type Route =
   | { name: 'home' }
-  | { name: 'settings' }
+  | { name: 'account' }
+  | { name: 'admin' }
   | { name: 'template'; design: TemplateInfo }
-  | { name: 'change'; fields: Fields; events: InviteEvent[]; selected?: string }
+  | { name: 'change'; design: TemplateInfo; fields: Fields; events: InviteEvent[] }
   | { name: 'card'; design: TemplateInfo }
   | { name: 'details'; design: TemplateInfo; fields: Fields; events: InviteEvent[] }
   | { name: 'progress'; design: TemplateInfo; request: Request }
-  | { name: 'result'; item: HistoryItem; fromCard: boolean };
+  | { name: 'result'; item: HistoryItem };
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -43,24 +45,40 @@ export default function App() {
     Figtree_700Bold,
     ...Ionicons.font,
   });
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const [categories, setCategories] = useState<Category[]>(BUNDLED_CATEGORIES);
   const [templates, setTemplates] = useState<TemplateInfo[] | null>(null);
+  const [category, setCategory] = useState('marriage');
+  const [config, setConfig] = useState<AppConfig | null>(null);
+  const [shop, setShop] = useState<ShopUser | null>(null);
+  const [hasAdmin, setHasAdmin] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [route, setRoute] = useState<Route>({ name: 'home' });
 
-  const refreshTemplates = useCallback((st: Settings) => {
-    fetchTemplates(st).then(setTemplates);
+  const refreshShop = useCallback(async () => {
+    if (!(await getShopToken())) return setShop(null);
+    try {
+      setShop(await getMe());
+    } catch (e) {
+      // expired or removed account: sign out; a network error keeps the saved sign-in
+      if (/signed in|401/i.test(String(e))) {
+        await setShopToken(null);
+        setShop(null);
+      }
+    }
   }, []);
 
   useEffect(() => {
-    loadSettings().then((st) => {
-      setSettings(st);
-      refreshTemplates(st);
+    getCatalog().then((c) => {
+      setCategories(c.categories);
+      setTemplates(c.templates);
     });
+    getConfig().then(setConfig).catch(() => {});
     loadHistory().then(setHistory);
-  }, [refreshTemplates]);
+    refreshShop();
+    getAdminToken().then((t) => setHasAdmin(!!t));
+  }, [refreshShop]);
 
-  if (!settings || !fontsLoaded) {
+  if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}>
         <ActivityIndicator color={C.maroon} />
@@ -68,46 +86,68 @@ export default function App() {
     );
   }
 
-  const configured = !!settings.cloudName && !!settings.uploadPreset;
   const home = () => setRoute({ name: 'home' });
-  const designById = (id?: string): TemplateInfo =>
-    templates?.find((t) => t.id === id) ?? { id: id || settings.template, title: 'Design' };
+  const catOf = (design?: TemplateInfo, id?: string): Category =>
+    categories.find((c) => c.id === (id ?? design?.category ?? 'marriage')) ?? categories[0];
+  const designById = (id?: string): TemplateInfo => templates?.find((t) => t.id === id) ?? { id: id ?? '', title: 'Design' };
 
   let screen: React.ReactNode;
   switch (route.name) {
     case 'home':
       screen = (
         <HomeScreen
+          categories={categories}
           templates={templates}
+          category={category}
+          onCategory={setCategory}
           history={history}
-          configured={configured}
+          config={config}
+          shop={shop}
           onPickTemplate={(design) => setRoute({ name: 'template', design })}
-          onOpen={(item) => setRoute({ name: 'result', item, fromCard: false })}
+          onOpen={(item) => setRoute({ name: 'result', item })}
           onDelete={async (item) => setHistory(await removeHistory(item.id))}
-          onSettings={() => setRoute({ name: 'settings' })}
+          onAccount={() => {
+            refreshShop();
+            setRoute({ name: 'account' });
+          }}
         />
       );
       break;
-    case 'settings':
+    case 'account':
       screen = (
-        <SettingsScreen
-          settings={settings}
+        <AccountScreen
+          shop={shop}
+          hasAdmin={hasAdmin}
+          config={config}
           onBack={home}
-          onSave={async (next) => {
-            await saveSettings(next);
-            setSettings(next);
-            refreshTemplates(next);
+          onShop={setShop}
+          onAdmin={() => {
+            setHasAdmin(true);
+            setRoute({ name: 'admin' });
+          }}
+        />
+      );
+      break;
+    case 'admin':
+      screen = (
+        <AdminScreen
+          onBack={() => setRoute({ name: 'account' })}
+          onSignedOut={() => {
+            setHasAdmin(false);
+            setRoute({ name: 'account' });
           }}
         />
       );
       break;
     case 'template': {
       const design = route.design;
+      const cat = catOf(design);
       screen = (
         <TemplateScreen
           design={design}
+          category={cat}
           onBack={home}
-          onType={() => setRoute({ name: 'details', design, fields: { ...DEFAULT_FIELDS }, events: [] })}
+          onType={() => setRoute({ name: 'details', design, fields: startFields(cat), events: [] })}
           onScan={() => setRoute({ name: 'card', design })}
         />
       );
@@ -115,11 +155,12 @@ export default function App() {
     }
     case 'change': {
       const r = route;
+      const cat = catOf(r.design);
       screen = (
         <DesignScreen
-          templates={templates}
-          selected={r.selected}
-          onBack={() => setRoute({ name: 'details', design: designById(r.selected), fields: r.fields, events: r.events })}
+          templates={templates?.filter((t) => (t.category ?? 'marriage') === cat.id) ?? null}
+          selected={r.design.id}
+          onBack={() => setRoute({ name: 'details', design: r.design, fields: r.fields, events: r.events })}
           onPick={(design) => setRoute({ name: 'details', design, fields: r.fields, events: r.events })}
         />
       );
@@ -127,27 +168,32 @@ export default function App() {
     }
     case 'card': {
       const design = route.design;
+      const cat = catOf(design);
       screen = (
         <CardScreen
           design={design}
           onBack={() => setRoute({ name: 'template', design })}
-          onMake={(card) => setRoute({ name: 'progress', design, request: { kind: 'card', template: design.id, card } })}
+          onMake={(card, quality) =>
+            setRoute({ name: 'progress', design, request: { kind: 'card', category: cat.id, template: design.id, card, quality } })
+          }
         />
       );
       break;
     }
     case 'details': {
       const design = route.design;
+      const cat = catOf(design);
       screen = (
         <DetailsScreen
           key={design.id}
+          category={cat}
           design={design}
           initialFields={route.fields}
           initialEvents={route.events}
-          onChangeDesign={(fields, events) => setRoute({ name: 'change', fields, events, selected: design.id })}
+          onChangeDesign={(fields, events) => setRoute({ name: 'change', design, fields, events })}
           onBack={() => setRoute({ name: 'template', design })}
           onSubmit={(fields, events) =>
-            setRoute({ name: 'progress', design, request: { kind: 'details', template: design.id, fields, events } })
+            setRoute({ name: 'progress', design, request: { kind: 'details', category: cat.id, template: design.id, fields, events } })
           }
         />
       );
@@ -155,9 +201,19 @@ export default function App() {
     }
     case 'progress': {
       const { request, design } = route;
+      const cat = catOf(design, request.category);
+      const toItem = (id: string, fields: Fields, events: InviteEvent[]): HistoryItem => ({
+        id,
+        category: cat.id,
+        template: design.id,
+        title: inviteTitle(cat, fields, events),
+        createdAt: Date.now(),
+        fields,
+        events,
+        fromCard: request.kind === 'card',
+      });
       screen = (
         <ProgressScreen
-          settings={settings}
           design={design}
           request={request}
           onCancel={() =>
@@ -165,39 +221,41 @@ export default function App() {
               ? setRoute({ name: 'details', design, fields: request.fields, events: request.events })
               : setRoute({ name: 'card', design })
           }
-          onDone={async (job, result) => {
-            const fromCard = request.kind === 'card';
-            const fields = fromCard ? { ...DEFAULT_FIELDS, ...(result.extracted_from_card?.fields ?? {}) } : request.fields;
-            const events = fromCard ? result.extracted_from_card?.events ?? [] : request.events;
-            const item: HistoryItem = {
-              id: job.id,
-              template: job.template,
-              title: inviteTitle(fields, events),
-              videoUrl: result.video_url ?? '',
-              createdAt: Date.now(),
-              fields,
-              events,
-            };
+          onCreated={async (order) => {
+            // saved straight away, so the video is under "Your videos" even if the person leaves this screen
+            const item =
+              request.kind === 'details'
+                ? toItem(order.id, request.fields, request.events)
+                : { ...toItem(order.id, startFields(cat), []), title: `${cat.title} (from card)` };
             setHistory(await addHistory(item));
-            setRoute({ name: 'result', item, fromCard });
+          }}
+          onDone={async (order) => {
+            let item: HistoryItem;
+            if (request.kind === 'details') item = toItem(order.id, request.fields, request.events);
+            else {
+              const fields = { ...startFields(cat), ...(order.extracted?.fields ?? {}) };
+              item = toItem(order.id, fields, order.extracted?.events ?? []);
+            }
+            setHistory(await addHistory(item));
+            setRoute({ name: 'result', item });
           }}
         />
       );
       break;
     }
-    case 'result':
+    case 'result': {
+      const item = route.item;
       screen = (
         <ResultScreen
-          key={route.item.id}
-          item={route.item}
-          fromCard={route.fromCard}
+          key={item.id}
+          item={item}
+          config={config}
           onHome={home}
-          onEdit={() =>
-            setRoute({ name: 'details', design: designById(route.item.template), fields: route.item.fields, events: route.item.events })
-          }
+          onEdit={() => setRoute({ name: 'details', design: { category: item.category, ...designById(item.template) }, fields: item.fields, events: item.events })}
         />
       );
       break;
+    }
   }
 
   return (

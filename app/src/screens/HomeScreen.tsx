@@ -1,30 +1,56 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Header, IconButton } from '../components';
+import { Chip, Header, IconButton, type IconName } from '../components';
 import { useInstallPrompt } from '../platform/install';
 import { confirm } from '../platform/notify';
 import { TemplateGrid } from '../TemplateGrid';
 import { C, F, s } from '../theme';
-import type { HistoryItem, TemplateInfo } from '../types';
+import type { AppConfig, Category, HistoryItem, ShopUser, TemplateInfo } from '../types';
+
+type Sort = 'featured' | 'az';
 
 export function HomeScreen(props: {
+  categories: Category[];
   templates: TemplateInfo[] | null;
+  category: string;
+  onCategory: (id: string) => void;
   history: HistoryItem[];
-  configured: boolean;
+  config: AppConfig | null;
+  shop: ShopUser | null;
   onPickTemplate: (t: TemplateInfo) => void;
   onOpen: (item: HistoryItem) => void;
   onDelete: (item: HistoryItem) => void;
-  onSettings: () => void;
+  onAccount: () => void;
 }) {
-  const { history, configured, templates } = props;
+  const { history, templates, categories, category, config, shop } = props;
   const inst = useInstallPrompt();
+  const [tag, setTag] = useState<string>('');
+  const [sort, setSort] = useState<Sort>('featured');
+  const cat = categories.find((c) => c.id === category) ?? categories[0];
   const thumb = (id?: string) => templates?.find((t) => t.id === id)?.preview_url;
+
+  const inCategory = useMemo(
+    () => (templates ? templates.filter((t) => (t.category ?? 'marriage') === cat?.id) : null),
+    [templates, cat?.id]
+  );
+  const tags = useMemo(() => [...new Set((inCategory ?? []).flatMap((t) => t.tags ?? []))].sort(), [inCategory]);
+  const shown = useMemo(() => {
+    if (!inCategory) return null;
+    const list = tag ? inCategory.filter((t) => t.tags?.includes(tag)) : [...inCategory];
+    return list.sort((a, b) => (sort === 'az' ? a.title.localeCompare(b.title) : (a.order ?? 100) - (b.order ?? 100)));
+  }, [inCategory, tag, sort]);
+
+  const shopPrice = shop?.status === 'approved';
+  const price = config ? (shopPrice ? config.prices.shop : config.prices.customer) : null;
 
   return (
     <SafeAreaView style={s.screen} edges={['top', 'left', 'right']}>
-      <Header brand right={<IconButton icon="settings-outline" label="Settings" onPress={props.onSettings} />} />
+      <Header
+        brand
+        right={<IconButton icon={shop ? 'storefront-outline' : 'person-circle-outline'} label="Account" onPress={props.onAccount} />}
+      />
       <ScrollView contentContainerStyle={[s.column, s.scroll]}>
         {inst.show && (
           <View style={[s.row, { backgroundColor: C.goldSoft, borderRadius: 12, padding: 12, marginBottom: 18 }]}>
@@ -46,25 +72,93 @@ export function HomeScreen(props: {
         )}
 
         <Text style={s.display}>Video invitations for every celebration</Text>
-        <Text style={[s.muted, { marginTop: 8, marginBottom: 24 }]}>
-          Choose a design, add the names and dates, and share the video on WhatsApp.
+        <Text style={[s.muted, { marginTop: 8, marginBottom: 20 }]}>
+          Pick the occasion and a design, add the details, and share the video on WhatsApp.
+          {price != null ? ` Preview free, ₹${price} to download${shopPrice ? ' (shop price)' : ''}.` : ''}
         </Text>
 
-        {!configured && (
-          <View style={[s.panel, { marginBottom: 20, borderColor: C.gold }]}>
-            <Text style={[s.body, { fontFamily: F.semi }]}>Connect your Cloudinary account</Text>
-            <Text style={[s.small, { marginTop: 4, marginBottom: 12 }]}>
-              Videos are sent to your rendering PC through Cloudinary. Add the cloud name and upload preset first.
-            </Text>
-            <Button title="Open settings" variant="secondary" onPress={props.onSettings} />
-          </View>
-        )}
-
-        <View style={[s.row, { justifyContent: 'space-between', marginBottom: 12 }]}>
-          <Text style={s.section}>Designs</Text>
-          {templates && <Text style={s.small}>{templates.length === 1 ? '1 design' : `${templates.length} designs`}</Text>}
+        {/* occasions */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -5, marginBottom: 18 }}>
+          {categories.map((c) => {
+            const on = c.id === cat?.id;
+            return (
+              <View key={c.id} style={{ width: '50%', padding: 5 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => {
+                    setTag('');
+                    props.onCategory(c.id);
+                  }}
+                  style={({ pressed }) => ({
+                    padding: 12,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: on ? C.maroon : C.line,
+                    backgroundColor: on ? C.maroon : pressed ? C.line : C.surface,
+                  })}
+                >
+                  <View
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 17,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: on ? 'rgba(255,255,255,0.14)' : C.goldSoft,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Ionicons name={(c.icon ?? 'sparkles-outline') as IconName} size={19} color={on ? '#E9CF96' : C.gold} />
+                  </View>
+                  <View>
+                    <Text numberOfLines={1} style={{ fontFamily: F.semi, fontSize: 15, color: on ? '#fff' : C.ink }}>
+                      {c.title}
+                    </Text>
+                    {!!c.subtitle && (
+                      <Text numberOfLines={1} style={{ fontFamily: F.body, fontSize: 12, color: on ? '#EBD9DB' : C.muted }}>
+                        {c.subtitle}
+                      </Text>
+                    )}
+                  </View>
+                </Pressable>
+              </View>
+            );
+          })}
         </View>
-        <TemplateGrid templates={templates} onPick={props.onPickTemplate} />
+
+        <View style={[s.row, { justifyContent: 'space-between', marginBottom: 10 }]}>
+          <Text style={s.section}>{cat ? `${cat.title} designs` : 'Designs'}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={sort === 'az' ? 'Sorted A to Z. Sort by featured' : 'Sorted by featured. Sort A to Z'}
+            onPress={() => setSort(sort === 'az' ? 'featured' : 'az')}
+            hitSlop={8}
+            style={s.row}
+          >
+            <Ionicons name="swap-vertical" size={16} color={C.maroon} />
+            <Text style={{ fontFamily: F.semi, fontSize: 13, color: C.maroon, marginLeft: 4 }}>
+              {sort === 'az' ? 'A–Z' : 'Featured'}
+            </Text>
+          </Pressable>
+        </View>
+        {tags.length > 1 && (inCategory?.length ?? 0) > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ paddingRight: 8 }}>
+            <Chip label="All styles" on={!tag} onPress={() => setTag('')} />
+            {tags.map((t) => (
+              <Chip key={t} label={t} on={tag === t} onPress={() => setTag(tag === t ? '' : t)} />
+            ))}
+          </ScrollView>
+        )}
+        {shown && shown.length === 0 ? (
+          <View style={[s.panel, { alignItems: 'center', paddingVertical: 28, marginBottom: 16 }]}>
+            <Ionicons name="color-palette-outline" size={28} color={C.gold} />
+            <Text style={[s.body, { fontFamily: F.semi, marginTop: 8 }]}>No {cat?.title.toLowerCase()} designs yet</Text>
+            <Text style={[s.small, { marginTop: 2, textAlign: 'center' }]}>New designs appear here as soon as they are added.</Text>
+          </View>
+        ) : (
+          <TemplateGrid templates={shown} onPick={props.onPickTemplate} />
+        )}
 
         {history.length > 0 && (
           <View style={{ marginTop: 16 }}>
@@ -79,12 +173,7 @@ export function HomeScreen(props: {
                   }}
                   style={({ pressed }) => [
                     s.row,
-                    {
-                      padding: 12,
-                      borderTopWidth: i === 0 ? 0 : 1,
-                      borderTopColor: C.line,
-                      backgroundColor: pressed ? C.bg : 'transparent',
-                    },
+                    { padding: 12, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: C.line, backgroundColor: pressed ? C.bg : 'transparent' },
                   ]}
                 >
                   {thumb(h.template) ? (
@@ -97,6 +186,7 @@ export function HomeScreen(props: {
                       {h.title}
                     </Text>
                     <Text style={s.small}>
+                      {categories.find((c) => c.id === h.category)?.title ?? ''} ·{' '}
                       {new Date(h.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </Text>
                   </View>

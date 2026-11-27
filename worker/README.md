@@ -65,7 +65,24 @@ With `.env` filled in and the worker running:
 ```
 It uploads a job like the app would, waits for the worker, and downloads the video into `output\`.
 
-## 5. Cloudinary flow (for the phone app)
+## 5. Taking orders from the website (Quick Invitations)
+
+Add these to `.env` and run `restart_worker.bat`:
+```
+INVITE_API_URL=https://quickinvitations.vercel.app
+WORKER_SECRET=<same value as WORKER_SECRET in Vercel>
+```
+`watch-cloudinary` then takes orders from the website instead of Cloudinary job files (no change
+to the scheduled task is needed). For each order it:
+- reads the card photo if there is one, using `ai_quality`: "accurate" uses `INVITE_AI_MODEL`
+  (default claude-sonnet-5-5), "approximate" uses `INVITE_AI_MODEL_FAST` (default claude-haiku-5-5),
+- renders the video,
+- uploads a small watermarked preview to `invites/previews/<id>` and the clean video to
+  `invites/final/<id>-<random>` (the website only shows that address after payment),
+- reports back to the website. On start-up it also sends the design list and the occasion forms
+  (`categories.json`).
+
+## 5b. Older Cloudinary job-file flow
 
 Set `CLOUDINARY_URL` in `.env` (Cloudinary console → API Keys → "API environment variable").
 
@@ -95,19 +112,34 @@ Notes:
 Edit the path in `start_worker.bat`, press Win+R, type `shell:startup`, and put a shortcut to it
 there. Also set Windows power options so the PC never sleeps.
 
-## 7. Job fields (rose_gold template)
+## 7. Occasions and job fields
 
+`categories.json` defines each occasion (marriage, birthday, cradle, baby_shower): the form the
+website shows, fixed wording (`defaults`), the sample used for previews, and what the card reader
+looks for. Each template says which occasion it belongs to with `"category"`.
+
+Marriage fields:
 Couple card: `couple_title`, `groom_short`, `couple_joiner` (default "with"), `bride_short`, `couple_line`
 Groom: `groom_label`, `groom_name`, `groom_nickname`, `groom_relation` (S/O), `groom_parents_label`, `groom_father`
 Bride: `bride_label`, `bride_name`, `bride_relation` (D/O), `bride_parents_label`, `bride_father`
 Save the date: `save_line1`, `save_title`, `save_days`, `save_dates`
 Events (one card each, in order): `title`, `date`, `time`, `venue`, `address1`, `address2`
 
+Birthday, cradle ceremony and baby shower fields are listed in `categories.json`.
+
 An empty value (`""`) leaves that line out. Text shrinks automatically to fit its width.
 
 ## 8. Templates (designs)
 
-Included: **rose_gold** (roses and gold ring) and **emerald_gold** (green with a gold mandala and sparkles).
+Included:
+- Marriage: **rose_gold** (roses and gold ring), **emerald_gold** (green with a gold mandala and sparkles)
+- Birthday: **birthday_confetti** (navy with falling confetti)
+- Cradle ceremony: **cradle_moonlight** (crescent moon, stars and clouds)
+- Baby shower: **babyshower_blush** (blush pink with bubbles and hearts)
+
+The backgrounds for the last four are made by `tools/make_background.py` and their music by
+`tools/make_music.py` (both generated here, so free to use). The layouts of the last three come from
+`tools/make_category_templates.py`.
 
 The app shows every installed design with a preview picture. When `watch-cloudinary` starts, the
 worker renders a preview for each template and uploads it plus `invites/templates/catalog.json`.
@@ -117,7 +149,8 @@ To add a design, make a folder in `templates/` with:
 - `background.mp4`: the animated background, 1080x1920, **with no text on it**
 - `music.m4a`: optional
 - `template.json`: copy one of the existing ones and change:
-  - `title`, `description`, `order`: how it appears in the app
+  - `category`: which occasion it belongs to (an id from `categories.json`)
+  - `title`, `description`, `tags`, `order`: how it appears in the app (`tags` become the style filters)
   - `scenes`: frame ranges in the background for each card (couple, groom, bride, event, save). A
     scene with `"repeat": "events"` is shown once per event. Transitions: `cut`, `fade`, `fadewhite`.
   - `slots`: each text line (which field, font `script`/`caps`/`serif`, size, centre x/y, max width,

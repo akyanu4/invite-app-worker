@@ -1,10 +1,11 @@
 ## This project
 
-- Small app (home, design, details/card, progress, result, settings); navigation is a simple screen switch in `App.tsx` on purpose (no Expo Router).
+- Small app (home, design, details/card, progress, result, account, admin); navigation is a simple screen switch in `App.tsx` on purpose (no Expo Router).
 - Look: henna maroon + gold leaf on pearl (`src/theme.ts`), Marcellus for headings, Figtree for text. Keep new screens in that system.
   Move to Expo Router if the app grows beyond a handful of screens.
-- Backend contract (Cloudinary + PC worker) is described in README.md and `src/cloudinary.ts`.
-- Form fields in `src/fields.ts` must match the worker template's text slots.
+- Server: `api/index.ts` (one Vercel function) -> `server/routes.ts`; Postgres via `server/db.ts`. The app calls it through `src/api.ts`.
+- Occasion forms come from `worker/categories.json` (published by the worker; a copy is bundled as `src/categories.json`).
+  Field keys must match the worker templates' text slots.
 
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 

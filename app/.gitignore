@@ -47,3 +47,6 @@ ios/
 
 # local settings
 .env
+
+# local server test database
+.pglite/

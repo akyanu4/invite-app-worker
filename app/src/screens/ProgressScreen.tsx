@@ -3,15 +3,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Header, StepBar } from '../components';
-import { checkResult, newJobId, submitJob, uploadCardPhoto } from '../cloudinary';
+import { createOrder, getOrder, uploadCard } from '../api';
+import { deviceId } from '../storage';
 import { PreviewVideo } from '../PreviewVideo';
 import { C, F, s } from '../theme';
-import type { Fields, InviteEvent, Job, JobResult, Settings, TemplateInfo } from '../types';
+import type { AiQuality, Fields, InviteEvent, Order, TemplateInfo } from '../types';
 import type { PickedCard } from './CardScreen';
 
 export type Request =
-  | { kind: 'details'; template: string; fields: Fields; events: InviteEvent[] }
-  | { kind: 'card'; template: string; card: PickedCard };
+  | { kind: 'details'; category: string; template: string; fields: Fields; events: InviteEvent[] }
+  | { kind: 'card'; category: string; template: string; card: PickedCard; quality: AiQuality };
 
 const POLL_MS = 5000;
 const SLOW_AFTER_S = 90; // the PC usually picks a job up within ~10 s
@@ -42,10 +43,10 @@ function Stage(props: { state: 'done' | 'active' | 'todo'; title: string; note?:
 }
 
 export function ProgressScreen(props: {
-  settings: Settings;
   design: TemplateInfo;
   request: Request;
-  onDone: (job: Job, result: JobResult) => void;
+  onCreated: (order: Order) => void;
+  onDone: (order: Order) => void;
   onCancel: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>('uploading');
@@ -64,36 +65,37 @@ export function ProgressScreen(props: {
       try {
         setPhase('uploading');
         setError('');
-        const { settings, request } = props;
-        const id = newJobId();
-        const job: Job = { id, template: request.template || settings.template, fields: {} };
-        if (request.kind === 'card') {
-          job.card_image_url = await uploadCardPhoto(settings, id, request.card.uri, request.card.mimeType);
-        } else {
-          job.fields = request.fields;
-          job.events = request.events;
-        }
-        await submitJob(settings, job);
+        const { request } = props;
+        const base = { device_id: await deviceId(), category: request.category, template: request.template };
+        const order =
+          request.kind === 'card'
+            ? await createOrder({
+                ...base,
+                card_image_url: await uploadCard(request.card.uri, request.card.mimeType),
+                ai_quality: request.quality,
+              })
+            : await createOrder({ ...base, fields: request.fields, events: request.events });
         if (!alive.current) return;
+        props.onCreated(order);
         setPhase('waiting');
 
         while (alive.current) {
           await new Promise((r) => setTimeout(r, POLL_MS));
           if (!alive.current) return;
           const secs = (Date.now() - started) / 1000;
-          const result = await checkResult(settings, id);
+          const o = await getOrder(order.id).catch(() => null);
           if (!alive.current) return;
-          if (result) {
-            if (result.status === 'failed') {
-              setError(result.error || 'The video could not be made.');
-              setPhase('error');
-            } else {
-              props.onDone(job, result);
-            }
+          if (o?.status === 'failed') {
+            setError(o.error || 'The video could not be made.');
+            setPhase('error');
+            return;
+          }
+          if (o?.status === 'ready') {
+            props.onDone(o);
             return;
           }
           if (secs > GIVE_UP_S) {
-            setError('No video after 15 minutes. Check that the rendering PC is on and connected to the internet, then try again.');
+            setError('No video after 15 minutes. It will appear under “Your videos” when it is ready.');
             setPhase('error');
             return;
           }
@@ -119,7 +121,7 @@ export function ProgressScreen(props: {
 
   return (
     <SafeAreaView style={s.screen}>
-      <Header title="Creating video" />
+      <Header title="Creating preview" />
       <ScrollView contentContainerStyle={[s.column, s.scroll]}>
         <StepBar step={3} />
         {phase !== 'error' ? (
@@ -131,7 +133,7 @@ export function ProgressScreen(props: {
                 <Image source={{ uri: d.preview_url }} style={{ width: '100%', height: '100%' }} />
               ) : null}
             </View>
-            <Text style={[s.title, { textAlign: 'center', marginTop: 18 }]}>Creating your video</Text>
+            <Text style={[s.title, { textAlign: 'center', marginTop: 18 }]}>Creating your free preview</Text>
             <Text style={[s.small, { textAlign: 'center', marginTop: 4, marginBottom: 22 }]}>
               {time} so far. {isCard ? 'This usually takes 2–3 minutes.' : 'This usually takes 1–2 minutes.'}
             </Text>
@@ -144,10 +146,10 @@ export function ProgressScreen(props: {
                 note={
                   phase === 'slow'
                     ? 'Taking longer than usual. The rendering PC may be busy, asleep or offline. Nothing is lost if you wait.'
-                    : 'You can leave this screen open; the video appears here when it is ready.'
+                    : 'You can leave this screen; the video also appears under “Your videos”.'
                 }
               />
-              <Stage state="todo" title="Ready to share" />
+              <Stage state="todo" title="Free preview ready" />
             </View>
             <Button title="Cancel" variant="quiet" onPress={props.onCancel} style={{ marginTop: 12 }} />
           </>

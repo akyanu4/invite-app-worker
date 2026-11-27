@@ -24,12 +24,64 @@
       "end_frame": 240,
       "transition_in": "cut",
       "slots": [
-        {"text": "{couple_title}", "font": "caps", "size": 40, "max_width": 760, "x": 540, "y": 640, "in": 20, "dur": 20},
-        {"type": "divider", "width": 260, "x": 540, "y": 700, "in": 26, "dur": 20},
-        {"text": "{groom_short}", "font": "script", "size": 190, "max_width": 820, "x": 540, "y": 830, "in": 40, "dur": 26},
-        {"text": "{couple_joiner}", "font": "script", "size": 90, "max_width": 400, "x": 540, "y": 968, "in": 50, "dur": 24},
-        {"text": "{bride_short}", "font": "script", "size": 150, "max_width": 820, "x": 540, "y": 1095, "in": 58, "dur": 26},
-        {"text": "{couple_line}", "font": "caps", "size": 32, "max_width": 760, "x": 540, "y": 1262, "in": 74, "dur": 24}
+        {
+          "text": "{couple_title}",
+          "font": "caps",
+          "size": 40,
+          "max_width": 760,
+          "x": 540,
+          "y": 640,
+          "in": 20,
+          "dur": 20
+        },
+        {
+          "type": "divider",
+          "width": 260,
+          "x": 540,
+          "y": 700,
+          "in": 26,
+          "dur": 20
+        },
+        {
+          "text": "{groom_short}",
+          "font": "script",
+          "size": 190,
+          "max_width": 820,
+          "x": 540,
+          "y": 830,
+          "in": 40,
+          "dur": 26
+        },
+        {
+          "text": "{couple_joiner}",
+          "font": "script",
+          "size": 90,
+          "max_width": 400,
+          "x": 540,
+          "y": 968,
+          "in": 50,
+          "dur": 24
+        },
+        {
+          "text": "{bride_short}",
+          "font": "script",
+          "size": 150,
+          "max_width": 820,
+          "x": 540,
+          "y": 1095,
+          "in": 58,
+          "dur": 26
+        },
+        {
+          "text": "{couple_line}",
+          "font": "caps",
+          "size": 32,
+          "max_width": 760,
+          "x": 540,
+          "y": 1262,
+          "in": 74,
+          "dur": 24
+        }
       ]
     },
     {
@@ -38,13 +90,74 @@
       "end_frame": 450,
       "transition_in": "fade",
       "slots": [
-        {"text": "{groom_label}", "font": "caps", "size": 46, "max_width": 800, "x": 540, "y": 560, "in": 14, "dur": 20},
-        {"text": "{groom_name}", "font": "script", "size": 130, "max_width": 900, "x": 540, "y": 720, "in": 26, "dur": 26},
-        {"text": "{groom_nickname}", "font": "script", "size": 100, "max_width": 800, "x": 540, "y": 860, "in": 32, "dur": 26},
-        {"type": "divider", "width": 300, "x": 540, "y": 960, "in": 42, "dur": 20},
-        {"text": "{groom_relation}", "font": "caps", "size": 72, "max_width": 800, "x": 540, "y": 1060, "in": 50, "dur": 22},
-        {"text": "{groom_parents_label}", "font": "caps", "size": 70, "max_width": 880, "x": 540, "y": 1170, "in": 56, "dur": 24},
-        {"text": "{groom_father}", "font": "caps", "size": 80, "max_width": 880, "x": 540, "y": 1290, "in": 62, "dur": 28}
+        {
+          "text": "{groom_label}",
+          "font": "caps",
+          "size": 46,
+          "max_width": 800,
+          "x": 540,
+          "y": 560,
+          "in": 14,
+          "dur": 20
+        },
+        {
+          "text": "{groom_name}",
+          "font": "script",
+          "size": 130,
+          "max_width": 900,
+          "x": 540,
+          "y": 720,
+          "in": 26,
+          "dur": 26
+        },
+        {
+          "text": "{groom_nickname}",
+          "font": "script",
+          "size": 100,
+          "max_width": 800,
+          "x": 540,
+          "y": 860,
+          "in": 32,
+          "dur": 26
+        },
+        {
+          "type": "divider",
+          "width": 300,
+          "x": 540,
+          "y": 960,
+          "in": 42,
+          "dur": 20
+        },
+        {
+          "text": "{groom_relation}",
+          "font": "caps",
+          "size": 72,
+          "max_width": 800,
+          "x": 540,
+          "y": 1060,
+          "in": 50,
+          "dur": 22
+        },
+        {
+          "text": "{groom_parents_label}",
+          "font": "caps",
+          "size": 70,
+          "max_width": 880,
+          "x": 540,
+          "y": 1170,
+          "in": 56,
+          "dur": 24
+        },
+        {
+          "text": "{groom_father}",
+          "font": "caps",
+          "size": 80,
+          "max_width": 880,
+          "x": 540,
+          "y": 1290,
+          "in": 62,
+          "dur": 28
+        }
       ]
     },
     {
@@ -53,12 +166,64 @@
       "end_frame": 660,
       "transition_in": "fade",
       "slots": [
-        {"text": "{bride_label}", "font": "caps", "size": 46, "max_width": 800, "x": 540, "y": 560, "in": 14, "dur": 20},
-        {"text": "{bride_name}", "font": "script", "size": 130, "max_width": 900, "x": 540, "y": 720, "in": 26, "dur": 26},
-        {"type": "divider", "width": 300, "x": 540, "y": 860, "in": 38, "dur": 20},
-        {"text": "{bride_relation}", "font": "caps", "size": 72, "max_width": 800, "x": 540, "y": 960, "in": 46, "dur": 22},
-        {"text": "{bride_parents_label}", "font": "caps", "size": 70, "max_width": 880, "x": 540, "y": 1070, "in": 52, "dur": 24},
-        {"text": "{bride_father}", "font": "caps", "size": 80, "max_width": 880, "x": 540, "y": 1190, "in": 58, "dur": 28}
+        {
+          "text": "{bride_label}",
+          "font": "caps",
+          "size": 46,
+          "max_width": 800,
+          "x": 540,
+          "y": 560,
+          "in": 14,
+          "dur": 20
+        },
+        {
+          "text": "{bride_name}",
+          "font": "script",
+          "size": 130,
+          "max_width": 900,
+          "x": 540,
+          "y": 720,
+          "in": 26,
+          "dur": 26
+        },
+        {
+          "type": "divider",
+          "width": 300,
+          "x": 540,
+          "y": 860,
+          "in": 38,
+          "dur": 20
+        },
+        {
+          "text": "{bride_relation}",
+          "font": "caps",
+          "size": 72,
+          "max_width": 800,
+          "x": 540,
+          "y": 960,
+          "in": 46,
+          "dur": 22
+        },
+        {
+          "text": "{bride_parents_label}",
+          "font": "caps",
+          "size": 70,
+          "max_width": 880,
+          "x": 540,
+          "y": 1070,
+          "in": 52,
+          "dur": 24
+        },
+        {
+          "text": "{bride_father}",
+          "font": "caps",
+          "size": 80,
+          "max_width": 880,
+          "x": 540,
+          "y": 1190,
+          "in": 58,
+          "dur": 28
+        }
       ]
     },
     {
@@ -69,13 +234,74 @@
       "transition_in": "fade",
       "transition_between": "fade",
       "slots": [
-        {"text": "{title}", "font": "script", "size": 130, "max_width": 860, "x": 540, "y": 610, "in": 18, "dur": 26},
-        {"text": "{date}", "font": "caps", "size": 76, "max_width": 860, "x": 540, "y": 770, "in": 32, "dur": 24},
-        {"text": "{time}", "font": "caps", "size": 56, "max_width": 820, "x": 540, "y": 875, "in": 42, "dur": 24},
-        {"type": "divider", "width": 300, "x": 540, "y": 960, "in": 50, "dur": 20},
-        {"text": "{venue}", "font": "caps", "size": 70, "max_width": 880, "x": 540, "y": 1060, "in": 56, "dur": 24},
-        {"text": "{address1}", "font": "caps", "size": 50, "max_width": 860, "x": 540, "y": 1165, "in": 64, "dur": 26},
-        {"text": "{address2}", "font": "caps", "size": 50, "max_width": 860, "x": 540, "y": 1250, "in": 70, "dur": 26}
+        {
+          "text": "{title}",
+          "font": "script",
+          "size": 130,
+          "max_width": 860,
+          "x": 540,
+          "y": 610,
+          "in": 18,
+          "dur": 26
+        },
+        {
+          "text": "{date}",
+          "font": "caps",
+          "size": 76,
+          "max_width": 860,
+          "x": 540,
+          "y": 770,
+          "in": 32,
+          "dur": 24
+        },
+        {
+          "text": "{time}",
+          "font": "caps",
+          "size": 56,
+          "max_width": 820,
+          "x": 540,
+          "y": 875,
+          "in": 42,
+          "dur": 24
+        },
+        {
+          "type": "divider",
+          "width": 300,
+          "x": 540,
+          "y": 960,
+          "in": 50,
+          "dur": 20
+        },
+        {
+          "text": "{venue}",
+          "font": "caps",
+          "size": 70,
+          "max_width": 880,
+          "x": 540,
+          "y": 1060,
+          "in": 56,
+          "dur": 24
+        },
+        {
+          "text": "{address1}",
+          "font": "caps",
+          "size": 50,
+          "max_width": 860,
+          "x": 540,
+          "y": 1165,
+          "in": 64,
+          "dur": 26
+        },
+        {
+          "text": "{address2}",
+          "font": "caps",
+          "size": 50,
+          "max_width": 860,
+          "x": 540,
+          "y": 1250,
+          "in": 70,
+          "dur": 26
+        }
       ]
     },
     {
@@ -84,11 +310,54 @@
       "end_frame": 1320,
       "transition_in": "fade",
       "slots": [
-        {"text": "{save_line1}", "font": "serif", "size": 66, "max_width": 700, "x": 540, "y": 700, "in": 16, "dur": 22},
-        {"text": "{save_title}", "font": "script", "size": 150, "max_width": 860, "x": 540, "y": 845, "in": 26, "dur": 26},
-        {"type": "divider", "width": 300, "x": 540, "y": 960, "in": 36, "dur": 20},
-        {"text": "{save_days}", "font": "script", "size": 120, "max_width": 800, "x": 540, "y": 1065, "in": 44, "dur": 26},
-        {"text": "{save_dates}", "font": "serif", "size": 72, "max_width": 820, "x": 540, "y": 1200, "in": 56, "dur": 26}
+        {
+          "text": "{save_line1}",
+          "font": "serif",
+          "size": 66,
+          "max_width": 700,
+          "x": 540,
+          "y": 700,
+          "in": 16,
+          "dur": 22
+        },
+        {
+          "text": "{save_title}",
+          "font": "script",
+          "size": 150,
+          "max_width": 860,
+          "x": 540,
+          "y": 845,
+          "in": 26,
+          "dur": 26
+        },
+        {
+          "type": "divider",
+          "width": 300,
+          "x": 540,
+          "y": 960,
+          "in": 36,
+          "dur": 20
+        },
+        {
+          "text": "{save_days}",
+          "font": "script",
+          "size": 120,
+          "max_width": 800,
+          "x": 540,
+          "y": 1065,
+          "in": 44,
+          "dur": 26
+        },
+        {
+          "text": "{save_dates}",
+          "font": "serif",
+          "size": 72,
+          "max_width": 820,
+          "x": 540,
+          "y": 1200,
+          "in": 56,
+          "dur": 26
+        }
       ]
     }
   ],
@@ -102,5 +371,10 @@
     "bride_parents_label": "MRS & MR.",
     "save_line1": "Please",
     "save_title": "Save the Date"
-  }
+  },
+  "category": "marriage",
+  "tags": [
+    "Elegant",
+    "Dark"
+  ]
 }

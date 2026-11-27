@@ -119,48 +119,52 @@ def _save_rgba(rgba, path):
 
 
 # --------------------------------------------------------------------------- reading a card
-CARD_PROMPT = """You are reading a printed Indian/Muslim wedding invitation card (English, may include Urdu).
-Return ONLY a JSON object, no other text, with this shape:
-{
-  "fields": {
-    "couple_title": "short event heading in CAPITALS, e.g. VALIMA CEREMONY",
-    "groom_short": "groom's short / pet name, e.g. Ayaan",
-    "bride_short": "bride's short name; if the card gives no bride name, use 'Daughter of'",
-    "couple_line": "one short line in CAPITALS shown under the couple names, e.g. bride's father 'MR. SYED ... SAHAB'",
-    "groom_name": "groom's full name in normal case",
-    "groom_nickname": "nickname in brackets e.g. (Ayaan), or empty",
-    "groom_parents_label": "e.g. MRS & MR.",
-    "groom_father": "father's name in CAPITALS incl. SAHAB",
-    "bride_name": "bride's full name, or 'Daughter of' if not printed",
-    "bride_relation": "D/O, or empty if bride_name is 'Daughter of'",
-    "bride_parents_label": "e.g. MRS & MR.",
-    "bride_father": "father's name in CAPITALS incl. SAHAB",
-    "save_title": "Save the Date (or Save the Dates for several events)",
-    "save_days": "weekday(s), e.g. Wed & Fri",
-    "save_dates": "e.g. 9th & 11th Dec 2026"
-  },
-  "events": [
-    {"title": "e.g. Nikah Ceremony", "date": "e.g. WED, 09 DEC 2026", "time": "e.g. AFTER ZOHAR or DINNER 9:00 PM",
-     "venue": "venue name in CAPITALS", "address1": "address line in CAPITALS", "address2": "second line (city / dinner info) in CAPITALS"}
-  ]
+def load_categories():
+    path = ROOT / "categories.json"
+    if not path.exists():
+        return {}
+    return {c["id"]: c for c in json.loads(path.read_text(encoding="utf-8"))["categories"]}
+
+
+def card_prompt(cat):
+    """Builds the card-reading instructions from the occasion's own form fields."""
+    lines = []
+    for sec in cat.get("sections", []):
+        for f in sec["fields"]:
+            how = "in CAPITALS" if f.get("caps") else "in normal case"
+            lines.append(f'    "{f["key"]}": "{f["label"]} ({how}), e.g. {f.get("hint", "")}"')
+    ev = ", ".join(f'"{f["key"]}": "{f["label"]}{" in CAPITALS" if f.get("caps") else ""}"'
+                   for f in cat.get("events", {}).get("fields", []))
+    return (f"You are reading a photo of {cat.get('card_hint', 'an invitation card')} (English, may include Urdu/Hindi).\n"
+            "Return ONLY a JSON object, no other text, with this shape:\n"
+            "{\n  \"fields\": {\n" + ",\n".join(lines) + "\n  },\n"
+            "  \"events\": [ {" + ev + "} ]\n}\n"
+            "List every event printed on the card, in date order. Keep each line short (under ~35 characters). "
+            "Use \"\" for anything not on the card. If a name isn't printed (e.g. the bride's), use the wording the card uses.")
+
+
+AI_MODELS = {
+    "accurate": lambda: os.environ.get("INVITE_AI_MODEL", "claude-sonnet-5-5"),
+    "approximate": lambda: os.environ.get("INVITE_AI_MODEL_FAST", "claude-haiku-5-5"),
 }
-List every event printed on the card, in date order. Keep lines short (under ~35 characters). Use "" for anything not on the card."""
 
 
-def read_card(image_url):
+def read_card(image_url, category="marriage", quality="accurate"):
     import anthropic
     if not os.environ.get("ANTHROPIC_API_KEY", "").strip():
         raise ValueError("Reading card photos needs a Claude API key. Add ANTHROPIC_API_KEY=... to the "
                          "worker's .env (from console.anthropic.com), restart the worker, or type the details instead.")
+    cats = load_categories()
+    cat = cats.get(category) or cats.get("marriage") or {}
+    model = AI_MODELS.get(quality, AI_MODELS["accurate"])()
     client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY
-    model = os.environ.get("INVITE_AI_MODEL", "claude-sonnet-5-5")
-    log("reading card with", model)
+    log(f"reading card ({quality}) with", model)
     msg = client.messages.create(
         model=model,
         max_tokens=2000,
         messages=[{"role": "user", "content": [
             {"type": "image", "source": {"type": "url", "url": image_url}},
-            {"type": "text", "text": CARD_PROMPT},
+            {"type": "text", "text": card_prompt(cat)},
         ]}],
     )
     text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
@@ -277,7 +281,7 @@ def join_scenes(tpl, clips, music, out_path):
     return length
 
 
-def render_job(job, out_path):
+def render_job(job, out_path, preview_path=None):
     tname = job.get("template") or "rose_gold"
     tdir = TEMPLATES / tname
     if not (tdir / "template.json").exists():
@@ -285,13 +289,16 @@ def render_job(job, out_path):
         raise ValueError(f"Unknown template '{tname}'. Installed: {have}")
     tpl = json.loads((tdir / "template.json").read_text(encoding="utf-8"))
 
-    fields, events = dict(tpl.get("defaults", {})), []
+    category = job.get("category") or tpl.get("category", "marriage")
+    cat = load_categories().get(category, {})
+    fields, events = dict(cat.get("defaults", {})), []
+    fields.update(tpl.get("defaults", {}))
     if job.get("card_image_url") and not job.get("skip_card_reading"):
-        got = read_card(job["card_image_url"])
+        got = read_card(job["card_image_url"], category, job.get("ai_quality", "accurate"))
         fields.update({k: v for k, v in got.get("fields", {}).items() if v is not None})
         events = got.get("events", [])
         job["extracted_from_card"] = got  # kept in the result so the app can show/edit it
-    fields.update(job.get("fields", {}))  # typed values always win over the card
+    fields.update({k: v for k, v in (job.get("fields") or {}).items() if isinstance(v, str) and v.strip()})
     if job.get("events"):
         events = job["events"]
     if not events and any(s.get("repeat") == "events" for s in tpl["scenes"]):
@@ -306,9 +313,40 @@ def render_job(job, out_path):
             clips.append((p, d, tr))
         length = join_scenes(tpl, clips, tdir / tpl["music"] if tpl.get("music") else None, out_path)
         log(f"done: {out_path} ({length:.1f}s)")
+        if preview_path:
+            make_watermarked(out_path, preview_path, work)
         return out_path
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+def make_watermarked(src, dst, work):
+    """Smaller copy with a repeated 'Preview' mark: what customers see before paying."""
+    W, H = 540, 960
+    mark = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(mark)
+    f = _font(FONTS / "Cinzel-VF.ttf", 24)
+    label = "PREVIEW  \u2022  QUICK INVITATIONS"
+    tw = int(d.textlength(label, font=f)) + 30
+    tile = Image.new("RGBA", (tw, 50), (0, 0, 0, 0))
+    ImageDraw.Draw(tile).text((15, 10), label, font=f, fill=(255, 255, 255, 105))
+    tile = tile.rotate(28, expand=True, resample=Image.BICUBIC)
+    for row, y in enumerate(range(-250, H + 100, 230)):
+        for x in range(-tile.width, W + tile.width, tile.width + 40):
+            mark.alpha_composite(tile, (x + (row % 2) * (tile.width // 2), y))
+    d.rectangle([0, H - 70, W, H], fill=(36, 25, 27, 190))
+    f2 = _font(FONTS / "Figtree-SemiBold.ttf", 22) if (FONTS / "Figtree-SemiBold.ttf").exists() else _font(FONTS / "Playfair-VF.ttf", 22)
+    msg = "Preview \u2013 unlock to download the full video"
+    while d.textlength(msg, font=f2) > W - 40 and f2.size > 12:
+        f2 = f2.font_variant(size=f2.size - 1)
+    mw = d.textlength(msg, font=f2)
+    d.text(((W - mw) / 2, H - 47), msg, font=f2, fill=(245, 222, 160, 255))
+    mp = Path(work) / "watermark.png"
+    mark.save(mp)
+    run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-i", str(mp), "-filter_complex",
+         f"[0:v]scale={W}:{H}[v];[v][1:v]overlay=0:0", "-c:v", "libx264", "-preset", "veryfast", "-crf", "30",
+         "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", str(dst)])
+    return dst
 
 
 def job_id_of(job, fallback):
@@ -321,11 +359,19 @@ def list_templates():
     out = []
     for tj in sorted(TEMPLATES.glob("*/template.json")):
         tpl = json.loads(tj.read_text(encoding="utf-8"))
+        if not (tj.parent / tpl.get("background", "background.mp4")).exists():
+            log(f"skipping design '{tj.parent.name}': its background video is missing")
+            continue
         out.append((tj.parent.name, tpl))
     return sorted(out, key=lambda t: (t[1].get("order", 100), t[0]))
 
 
-def sample_fields():
+def sample_fields(category=None):
+    cat = load_categories().get(category or "", {})
+    if cat.get("sample"):
+        f = dict(cat.get("defaults", {}))
+        f.update(cat["sample"].get("fields", {}))
+        return f, cat["sample"].get("events", [])
     job = json.loads((ROOT / "jobs" / "sample_job.json").read_text(encoding="utf-8"))
     return job.get("fields", {}), job.get("events", [])
 
@@ -337,13 +383,13 @@ def make_preview(name, force=False):
     tpl = json.loads((tdir / "template.json").read_text(encoding="utf-8"))
     out, clip_out = tdir / "preview.jpg", tdir / "preview.mp4"
     newest = max((tdir / f).stat().st_mtime for f in ("template.json", tpl["background"]))
-    sample = ROOT / "jobs" / "sample_job.json"
-    if sample.exists():
-        newest = max(newest, sample.stat().st_mtime)
+    for sample in (ROOT / "jobs" / "sample_job.json", ROOT / "categories.json"):
+        if sample.exists():
+            newest = max(newest, sample.stat().st_mtime)
     if (not force and out.exists() and clip_out.exists()
             and min(out.stat().st_mtime, clip_out.stat().st_mtime) > newest):
         return out
-    fields, events = sample_fields()
+    fields, events = sample_fields(tpl.get("category"))
     merged = dict(tpl.get("defaults", {}))
     merged.update(fields)
     scene_id = tpl.get("preview_scene", tpl["scenes"][0]["id"])
@@ -382,6 +428,9 @@ def publish_templates():
             "id": name,
             "title": tpl.get("title", name.replace("_", " ").title()),
             "description": tpl.get("description", ""),
+            "category": tpl.get("category", "marriage"),
+            "tags": tpl.get("tags", []),
+            "order": tpl.get("order", 100),
             "preview_url": up["secure_url"],
         }
         clip = prev.with_suffix(".mp4")
@@ -396,8 +445,73 @@ def publish_templates():
                               indent=2, ensure_ascii=False), encoding="utf-8")
     cloudinary.uploader.upload(str(tmp), resource_type="raw", public_id=f"{base}/templates/catalog.json",
                                overwrite=True, invalidate=True)
+    if api_enabled():
+        cats = [c for c in load_categories().values()]
+        api_post("/api/worker/catalog", {"categories": cats, "templates": catalog})
+        log("sent the design list to", os.environ["INVITE_API_URL"])
     log(f"published {len(catalog)} template(s): " + ", ".join(t["id"] for t in catalog))
     return catalog
+
+
+# --------------------------------------------------------------------------- app server (orders queue)
+def api_enabled():
+    return bool(os.environ.get("INVITE_API_URL", "").strip() and os.environ.get("WORKER_SECRET", "").strip())
+
+
+def api_post(path, data, timeout=60):
+    url = os.environ["INVITE_API_URL"].rstrip("/") + path
+    req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), method="POST", headers={
+        "Content-Type": "application/json", "Authorization": "Bearer " + os.environ["WORKER_SECRET"].strip(),
+        "User-Agent": "invite-worker"})
+    with urllib.request.urlopen(req, timeout=timeout) as fh:
+        return json.loads(fh.read().decode("utf-8") or "{}")
+
+
+def mode_api(interval):
+    """Takes paid-for orders from the app server, renders them, uploads a watermarked preview
+    and the clean video (at an unguessable address) and reports back."""
+    import secrets
+    import cloudinary.uploader
+    base = os.environ.get("INVITE_CLOUDINARY_FOLDER", "invites").strip("/")
+    OUTPUT.mkdir(exist_ok=True)
+    try:
+        publish_templates()
+    except Exception:
+        log("could not publish the design list:")
+        traceback.print_exc()
+    log(f"taking orders from {os.environ['INVITE_API_URL']} every {interval}s")
+    while True:
+        try:
+            job = api_post("/api/worker/next", {}).get("job")
+        except Exception as e:
+            log("server not reachable:", e)
+            time.sleep(interval)
+            continue
+        if not job:
+            time.sleep(interval)
+            continue
+        jid = job_id_of(job, "order")
+        log("order", jid, job.get("category"), job.get("template"))
+        out, prev = OUTPUT / f"{jid}.mp4", OUTPUT / f"{jid}_preview.mp4"
+        try:
+            render_job(job, out, preview_path=prev)
+            upp = cloudinary.uploader.upload_large(str(prev), resource_type="video",
+                                                   public_id=f"{base}/previews/{jid}", overwrite=True)
+            upf = cloudinary.uploader.upload_large(str(out), resource_type="video", overwrite=True,
+                                                   public_id=f"{base}/final/{jid}-{secrets.token_hex(12)}")
+            api_post("/api/worker/complete", {"id": job["id"], "preview_url": upp["secure_url"],
+                                              "final_url": upf["secure_url"],
+                                              "extracted": job.get("extracted_from_card")})
+            log("ready", jid)
+        except Exception as e:
+            traceback.print_exc()
+            try:
+                api_post("/api/worker/fail", {"id": job["id"], "error": str(e)[:480]})
+            except Exception:
+                traceback.print_exc()
+        finally:
+            for f in (out, prev):
+                f.unlink(missing_ok=True)
 
 
 # --------------------------------------------------------------------------- modes
@@ -434,6 +548,8 @@ def mode_watch_cloudinary(interval):
     import cloudinary, cloudinary.api, cloudinary.uploader  # reads CLOUDINARY_URL from the environment
     if not os.environ.get("CLOUDINARY_URL"):
         sys.exit("Set CLOUDINARY_URL in .env (Cloudinary dashboard > API Keys).")
+    if api_enabled():
+        return mode_api(interval)
     base = os.environ.get("INVITE_CLOUDINARY_FOLDER", "invites").strip("/")
     pending, processing, done, failed = (f"{base}/jobs/{s}" for s in ("pending", "processing", "done", "failed"))
     videos = f"{base}/videos"
