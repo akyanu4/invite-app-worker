@@ -113,5 +113,11 @@ Adding a form field: add it to the occasion in `worker/categories.json` (and cop
 - The clean video's address is only given out after payment and contains a random part, so it can't be
   guessed from the preview.
 - One phone can have at most 5 videos being made at once, to stop the queue being flooded.
+- **Keeping the database free:** Neon's free plan includes 100 compute-hours a month, and the database
+  only uses them while awake (it sleeps after ~5 minutes without requests). So the worker checks for
+  new orders every 15 minutes when idle, and every few seconds for 5 minutes after an order.
+  Customers see their place in the queue and that videos are usually ready within 20 minutes; they can
+  close the app and find the video under "Your videos" later. Change the idle check with
+  `INVITE_IDLE_POLL_MINUTES` in the worker's `.env` (below ~6 the database never sleeps).
 - Payments are confirmed by hand. If volume grows, a payment gateway (Razorpay, Cashfree) can replace the
   UTR step without changing the rest.

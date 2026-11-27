@@ -216,6 +216,7 @@ export default function App() {
         <ProgressScreen
           design={design}
           request={request}
+          onHome={home}
           onCancel={() =>
             request.kind === 'details'
               ? setRoute({ name: 'details', design, fields: request.fields, events: request.events })

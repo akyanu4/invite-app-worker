@@ -1,15 +1,26 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Chip, Header, IconButton, type IconName } from '../components';
+import { getOrder } from '../api';
+import { Badge, Chip, Header, IconButton, type IconName } from '../components';
 import { useInstallPrompt } from '../platform/install';
 import { confirm } from '../platform/notify';
 import { TemplateGrid } from '../TemplateGrid';
 import { C, F, s } from '../theme';
-import type { AppConfig, Category, HistoryItem, ShopUser, TemplateInfo } from '../types';
+import type { AppConfig, Category, HistoryItem, Order, ShopUser, TemplateInfo } from '../types';
 
 type Sort = 'featured' | 'az';
+
+function statusBadge(o?: Order) {
+  if (!o) return null;
+  if (o.status === 'queued') return <Badge label="In queue" tone="grey" />;
+  if (o.status === 'rendering') return <Badge label="Being made" tone="grey" />;
+  if (o.status === 'failed') return <Badge label="Failed" tone="red" />;
+  if (o.pay_status === 'paid') return <Badge label="Ready to download" tone="green" />;
+  if (o.pay_status === 'submitted') return <Badge label="Payment checking" tone="gold" />;
+  return <Badge label="Preview ready" tone="gold" />;
+}
 
 export function HomeScreen(props: {
   categories: Category[];
@@ -28,6 +39,20 @@ export function HomeScreen(props: {
   const inst = useInstallPrompt();
   const [tag, setTag] = useState<string>('');
   const [sort, setSort] = useState<Sort>('featured');
+  const [orders, setOrders] = useState<Record<string, Order>>({});
+
+  // status of the latest videos, so people coming back can see which ones are ready
+  const recentIds = history.slice(0, 10).map((h) => h.id).join(',');
+  useEffect(() => {
+    if (!recentIds) return;
+    let live = true;
+    Promise.all(recentIds.split(',').map((id) => getOrder(id).catch(() => null))).then((list) => {
+      if (live) setOrders(Object.fromEntries(list.filter((o): o is Order => !!o).map((o) => [o.id, o])));
+    });
+    return () => {
+      live = false;
+    };
+  }, [recentIds]);
   const cat = categories.find((c) => c.id === category) ?? categories[0];
   const thumb = (id?: string) => templates?.find((t) => t.id === id)?.preview_url;
 
@@ -189,6 +214,7 @@ export function HomeScreen(props: {
                       {categories.find((c) => c.id === h.category)?.title ?? ''} ·{' '}
                       {new Date(h.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </Text>
+                    {!!orders[h.id] && <View style={{ marginTop: 4 }}>{statusBadge(orders[h.id])}</View>}
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={C.faint} />
                 </Pressable>

@@ -73,7 +73,8 @@ INVITE_API_URL=https://quickinvitations.vercel.app
 WORKER_SECRET=<same value as WORKER_SECRET in Vercel>
 ```
 `watch-cloudinary` then takes orders from the website instead of Cloudinary job files (no change
-to the scheduled task is needed). For each order it:
+to the scheduled task is needed). When idle it checks every 15 minutes (`INVITE_IDLE_POLL_MINUTES`) so
+the free database can sleep; after an order it checks every 10 s for 5 minutes. For each order it:
 - reads the card photo if there is one, using `ai_quality`: "accurate" uses `INVITE_AI_MODEL`
   (default claude-sonnet-5-5), "approximate" uses `INVITE_AI_MODEL_FAST` (default claude-haiku-5-5),
 - renders the video,

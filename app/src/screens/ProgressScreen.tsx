@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Header, StepBar } from '../components';
 import { createOrder, getOrder, uploadCard } from '../api';
-import { deviceId } from '../storage';
+import { Button, Header, StepBar } from '../components';
 import { PreviewVideo } from '../PreviewVideo';
+import { deviceId } from '../storage';
 import { C, F, s } from '../theme';
 import type { AiQuality, Fields, InviteEvent, Order, TemplateInfo } from '../types';
 import type { PickedCard } from './CardScreen';
@@ -14,11 +14,19 @@ export type Request =
   | { kind: 'details'; category: string; template: string; fields: Fields; events: InviteEvent[] }
   | { kind: 'card'; category: string; template: string; card: PickedCard; quality: AiQuality };
 
-const POLL_MS = 5000;
-const SLOW_AFTER_S = 90; // the PC usually picks a job up within ~10 s
-const GIVE_UP_S = 15 * 60;
+const POLL_MS = 15000;
+const SLOW_AFTER_S = 45 * 60;
 
-type Phase = 'uploading' | 'waiting' | 'slow' | 'error';
+type Phase = 'sending' | 'queued' | 'rendering' | 'error';
+
+/** Shared wording for a video that is waiting, also used on the video screen. */
+export function queueText(order: Pick<Order, 'status' | 'queue_position'> | null, slow = false) {
+  if (slow) return 'Taking longer than usual: the computer that makes the videos may be switched off. Nothing is lost; it will be made when it is back on.';
+  if (order?.status === 'rendering') return 'Your invitation is being animated now. This takes about 2–3 minutes.';
+  const pos = order?.queue_position ?? 1;
+  const ahead = pos > 1 ? `${pos - 1} ${pos - 1 === 1 ? 'video is' : 'videos are'} ahead of yours. ` : 'Yours is next. ';
+  return `${ahead}Videos are usually ready within 20 minutes.`;
+}
 
 function Stage(props: { state: 'done' | 'active' | 'todo'; title: string; note?: string }) {
   return (
@@ -48,26 +56,26 @@ export function ProgressScreen(props: {
   onCreated: (order: Order) => void;
   onDone: (order: Order) => void;
   onCancel: () => void;
+  onHome: () => void;
 }) {
-  const [phase, setPhase] = useState<Phase>('uploading');
+  const [phase, setPhase] = useState<Phase>('sending');
+  const [order, setOrder] = useState<Order | null>(null);
+  const [slow, setSlow] = useState(false);
   const [error, setError] = useState('');
-  const [elapsed, setElapsed] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const alive = useRef(true);
 
   useEffect(() => {
     alive.current = true;
     const started = Date.now();
-    setElapsed(0);
-    const tick = setInterval(() => alive.current && setElapsed(Math.round((Date.now() - started) / 1000)), 1000);
 
     (async () => {
       try {
-        setPhase('uploading');
+        setPhase('sending');
         setError('');
         const { request } = props;
         const base = { device_id: await deviceId(), category: request.category, template: request.template };
-        const order =
+        const created =
           request.kind === 'card'
             ? await createOrder({
                 ...base,
@@ -76,30 +84,27 @@ export function ProgressScreen(props: {
               })
             : await createOrder({ ...base, fields: request.fields, events: request.events });
         if (!alive.current) return;
-        props.onCreated(order);
-        setPhase('waiting');
+        props.onCreated(created);
+        setPhase('queued');
 
         while (alive.current) {
+          const o = await getOrder(created.id).catch(() => null);
+          if (!alive.current) return;
+          if (o) {
+            setOrder(o);
+            if (o.status === 'failed') {
+              setError(o.error || 'The video could not be made.');
+              setPhase('error');
+              return;
+            }
+            if (o.status === 'ready') {
+              props.onDone(o);
+              return;
+            }
+            setPhase(o.status === 'rendering' ? 'rendering' : 'queued');
+          }
+          setSlow((Date.now() - started) / 1000 > SLOW_AFTER_S);
           await new Promise((r) => setTimeout(r, POLL_MS));
-          if (!alive.current) return;
-          const secs = (Date.now() - started) / 1000;
-          const o = await getOrder(order.id).catch(() => null);
-          if (!alive.current) return;
-          if (o?.status === 'failed') {
-            setError(o.error || 'The video could not be made.');
-            setPhase('error');
-            return;
-          }
-          if (o?.status === 'ready') {
-            props.onDone(o);
-            return;
-          }
-          if (secs > GIVE_UP_S) {
-            setError('No video after 15 minutes. It will appear under “Your videos” when it is ready.');
-            setPhase('error');
-            return;
-          }
-          if (secs > SLOW_AFTER_S) setPhase('slow');
         }
       } catch (e) {
         if (!alive.current) return;
@@ -110,14 +115,13 @@ export function ProgressScreen(props: {
 
     return () => {
       alive.current = false;
-      clearInterval(tick);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
 
-  const time = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
   const isCard = props.request.kind === 'card';
   const d = props.design;
+  const sent = phase !== 'sending';
 
   return (
     <SafeAreaView style={s.screen}>
@@ -133,25 +137,37 @@ export function ProgressScreen(props: {
                 <Image source={{ uri: d.preview_url }} style={{ width: '100%', height: '100%' }} />
               ) : null}
             </View>
-            <Text style={[s.title, { textAlign: 'center', marginTop: 18 }]}>Creating your free preview</Text>
-            <Text style={[s.small, { textAlign: 'center', marginTop: 4, marginBottom: 22 }]}>
-              {time} so far. {isCard ? 'This usually takes 2–3 minutes.' : 'This usually takes 1–2 minutes.'}
+            <Text style={[s.title, { textAlign: 'center', marginTop: 18 }]}>
+              {phase === 'sending' ? 'Sending your order' : phase === 'rendering' ? 'Making your preview' : 'Your video is in the queue'}
             </Text>
+            {sent && (
+              <Text style={[s.muted, { textAlign: 'center', marginTop: 6 }]}>{queueText(order ?? { status: 'queued' }, slow)}</Text>
+            )}
 
-            <View style={s.panel}>
-              <Stage state={phase === 'uploading' ? 'active' : 'done'} title={isCard ? 'Sending the card photo' : 'Sending your details'} />
+            {sent && (
+              <View style={[s.row, { backgroundColor: C.goldSoft, borderRadius: 12, padding: 12, marginTop: 18, alignItems: 'flex-start' }]}>
+                <Ionicons name="time-outline" size={20} color={C.gold} style={{ marginRight: 10, marginTop: 1 }} />
+                <Text style={[s.small, { flex: 1, color: C.ink }]}>
+                  You don’t need to wait here. Close the app and come back later: your video will be under{' '}
+                  <Text style={{ fontFamily: F.semi }}>Your videos</Text> on the home screen, ready to watch and download.
+                </Text>
+              </View>
+            )}
+
+            <View style={[s.panel, { marginTop: 18 }]}>
+              <Stage state={sent ? 'done' : 'active'} title={isCard ? 'Card photo sent' : 'Details sent'} />
               <Stage
-                state={phase === 'uploading' ? 'todo' : 'active'}
-                title={isCard ? 'Reading the card and animating' : 'Animating your invitation'}
-                note={
-                  phase === 'slow'
-                    ? 'Taking longer than usual. The rendering PC may be busy, asleep or offline. Nothing is lost if you wait.'
-                    : 'You can leave this screen; the video also appears under “Your videos”.'
-                }
+                state={phase === 'queued' ? 'active' : phase === 'rendering' ? 'done' : 'todo'}
+                title="Waiting in the queue"
               />
+              <Stage state={phase === 'rendering' ? 'active' : 'todo'} title={isCard ? 'Reading the card and animating' : 'Animating your invitation'} />
               <Stage state="todo" title="Free preview ready" />
             </View>
-            <Button title="Cancel" variant="quiet" onPress={props.onCancel} style={{ marginTop: 12 }} />
+            {sent ? (
+              <Button title="Back to home" icon="home-outline" variant="secondary" onPress={props.onHome} style={{ marginTop: 14 }} />
+            ) : (
+              <Button title="Cancel" variant="quiet" onPress={props.onCancel} style={{ marginTop: 12 }} />
+            )}
           </>
         ) : (
           <View style={{ alignItems: 'center', paddingTop: 30 }}>

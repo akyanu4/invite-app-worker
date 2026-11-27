@@ -50,6 +50,8 @@ export type Order = {
   promo_code?: string | null;
   created_at: string;
   user_id?: string | null;
+  /** Place in the queue while waiting (1 = next). */
+  queue_position?: number;
 };
 
 export type ShopUser = {

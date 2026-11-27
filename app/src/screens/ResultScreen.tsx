@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { applyPromo, getOrder, qrImageUrl, submitUtr, upiLink } from '../api';
 import { Badge, Button, Header, StepBar } from '../components';
 import { notify } from '../platform/notify';
+import { queueText } from './ProgressScreen';
 import { SAVE_LABEL, saveVideo, shareVideo } from '../platform/video';
 import { C, F, s } from '../theme';
 import type { AppConfig, HistoryItem, Order } from '../types';
@@ -59,7 +60,7 @@ export function ResultScreen(props: {
   const waiting = !!order && (busyStates.has(order.status) || order.pay_status === 'submitted');
   useEffect(() => {
     if (!waiting) return;
-    const t = setInterval(refresh, 8000);
+    const t = setInterval(refresh, 15000);
     return () => clearInterval(t);
   }, [waiting, refresh]);
 
@@ -149,10 +150,12 @@ export function ResultScreen(props: {
             <ActivityIndicator size="large" color={C.maroon} />
           )}
           <Text style={[s.title, { marginTop: 14, textAlign: 'center' }]}>
-            {failed ? 'The video wasn’t created' : 'Your video is still being made'}
+            {failed ? 'The video wasn’t created' : order.status === 'rendering' ? 'Making your preview' : 'Your video is in the queue'}
           </Text>
           <Text style={[s.muted, { textAlign: 'center', marginTop: 8 }]}>
-            {failed ? order.error || 'Something went wrong.' : 'This page updates by itself when it is ready.'}
+            {failed
+              ? order.error || 'Something went wrong.'
+              : `${queueText(order, Date.now() - new Date(order.created_at).getTime() > 45 * 60_000)} You can close the app and come back; this page updates by itself.`}
           </Text>
           <Button title="Edit details" icon="create-outline" variant="secondary" onPress={props.onEdit} style={{ marginTop: 22, alignSelf: 'stretch' }} />
         </View>

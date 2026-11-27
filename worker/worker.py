@@ -468,7 +468,7 @@ def api_post(path, data, timeout=60):
 
 
 def mode_api(interval):
-    """Takes paid-for orders from the app server, renders them, uploads a watermarked preview
+    """Takes orders from the app server, renders them, uploads a watermarked preview
     and the clean video (at an unguessable address) and reports back."""
     import secrets
     import cloudinary.uploader
@@ -479,17 +479,25 @@ def mode_api(interval):
     except Exception:
         log("could not publish the design list:")
         traceback.print_exc()
-    log(f"taking orders from {os.environ['INVITE_API_URL']} every {interval}s")
+    # The database (Neon free plan) sleeps after ~5 minutes without requests. Checking only every
+    # INVITE_IDLE_POLL_MINUTES while idle lets it sleep; right after an order we check often, because
+    # the database is awake anyway and more orders tend to follow.
+    idle = max(1.0, float(os.environ.get("INVITE_IDLE_POLL_MINUTES", "15"))) * 60
+    busy_until = time.time() + 300
+    log(f"taking orders from {os.environ['INVITE_API_URL']} (every {interval}s when busy, "
+        f"every {idle / 60:g} min when idle)")
     while True:
         try:
             job = api_post("/api/worker/next", {}).get("job")
         except Exception as e:
             log("server not reachable:", e)
-            time.sleep(interval)
+            time.sleep(60)
             continue
         if not job:
-            time.sleep(interval)
+            wait = interval if time.time() < busy_until else idle
+            time.sleep(wait)
             continue
+        busy_until = time.time() + 300
         jid = job_id_of(job, "order")
         log("order", jid, job.get("category"), job.get("template"))
         out, prev = OUTPUT / f"{jid}.mp4", OUTPUT / f"{jid}_preview.mp4"
@@ -503,6 +511,7 @@ def mode_api(interval):
                                               "final_url": upf["secure_url"],
                                               "extracted": job.get("extracted_from_card")})
             log("ready", jid)
+            busy_until = time.time() + 300
         except Exception as e:
             traceback.print_exc()
             try:

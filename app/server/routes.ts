@@ -180,7 +180,16 @@ async function route(req: Request): Promise<Response> {
     return json({ order: publicOrder(await getOrder(id)) });
   }
   if (m === 'GET' && a === 'orders' && b && !c) {
-    return json({ order: publicOrder(await getOrder(b)) });
+    const o = await getOrder(b);
+    const out: Record<string, unknown> = publicOrder(o);
+    if (o.status === 'queued') {
+      const r = await one(
+        "SELECT count(*) AS n FROM orders WHERE status IN ('queued', 'rendering') AND created_at <= $1",
+        [o.created_at]
+      );
+      out.queue_position = Number(r?.n ?? 1);
+    }
+    return json({ order: out });
   }
   if (m === 'POST' && a === 'orders' && b && c === 'promo') {
     const x = await body(req);
