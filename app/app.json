@@ -24,7 +24,6 @@
       "favicon": "./assets/favicon.png",
       "name": "Invitation Videos",
       "shortName": "Invitations",
-      "themeColor": "#B8862F",
       "backgroundColor": "#FBF7EF",
       "output": "single"
     },
@@ -48,6 +47,11 @@
         }
       ],
       "expo-video"
-    ]
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FBF7EF"
+    }
   }
 }

@@ -66,6 +66,10 @@ The same code runs as a website. Anyone opens the link on Android or iPhone, wit
    `EXPO_PUBLIC_CLOUDINARY_PRESET` = `invites_unsigned`, `EXPO_PUBLIC_CLOUDINARY_FOLDER` = `invites`.
 4. **Deploy.** Every push to `main` redeploys automatically.
 
+**Use it like an app:** open the site on the phone. Android Chrome shows an **Install** button on the
+home screen (or ⋮ menu → Install app). On iPhone use Safari → Share → **Add to Home Screen**. It then opens
+full-screen with its own icon, and updates by itself whenever you push to `main`.
+
 On the website, "Share on WhatsApp" opens the phone's share menu with the video file. On iPhone,
 saving goes through Share → Save Video.
 

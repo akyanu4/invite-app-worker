@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, TopBar } from '../components';
 import { fetchTemplates } from '../cloudinary';
+import { PreviewVideo } from '../PreviewVideo';
 import { C, s } from '../theme';
 import type { Settings, TemplateInfo } from '../types';
 
@@ -56,7 +57,9 @@ export function DesignScreen(props: {
                     overflow: 'hidden',
                   }}
                 >
-                  {t.preview_url ? (
+                  {t.preview_video_url ? (
+                    <PreviewVideo uri={t.preview_video_url} style={{ width: '100%', aspectRatio: 9 / 16 }} />
+                  ) : t.preview_url ? (
                     <Image source={{ uri: t.preview_url }} style={{ width: '100%', aspectRatio: 9 / 16 }} resizeMode="cover" />
                   ) : (
                     <View

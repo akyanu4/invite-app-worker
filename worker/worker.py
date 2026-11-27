@@ -149,6 +149,9 @@ List every event printed on the card, in date order. Keep lines short (under ~35
 
 def read_card(image_url):
     import anthropic
+    if not os.environ.get("ANTHROPIC_API_KEY", "").strip():
+        raise ValueError("Reading card photos needs a Claude API key. Add ANTHROPIC_API_KEY=... to the "
+                         "worker's .env (from console.anthropic.com), restart the worker, or type the details instead.")
     client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY
     model = os.environ.get("INVITE_AI_MODEL", "claude-sonnet-5-5")
     log("reading card with", model)
@@ -328,12 +331,17 @@ def sample_fields():
 
 
 def make_preview(name, force=False):
-    """Renders the template's preview scene with the sample details and saves preview.jpg."""
+    """Renders the template's preview scene with the sample details and saves
+    preview.jpg (still) and preview.mp4 (short muted loop for the design picker)."""
     tdir = TEMPLATES / name
     tpl = json.loads((tdir / "template.json").read_text(encoding="utf-8"))
-    out = tdir / "preview.jpg"
+    out, clip_out = tdir / "preview.jpg", tdir / "preview.mp4"
     newest = max((tdir / f).stat().st_mtime for f in ("template.json", tpl["background"]))
-    if out.exists() and out.stat().st_mtime > newest and not force:
+    sample = ROOT / "jobs" / "sample_job.json"
+    if sample.exists():
+        newest = max(newest, sample.stat().st_mtime)
+    if (not force and out.exists() and clip_out.exists()
+            and min(out.stat().st_mtime, clip_out.stat().st_mtime) > newest):
         return out
     fields, events = sample_fields()
     merged = dict(tpl.get("defaults", {}))
@@ -348,9 +356,16 @@ def make_preview(name, force=False):
         at = dur * tpl.get("preview_at", 0.7)
         run(["ffmpeg", "-v", "error", "-y", "-ss", f"{at:.3f}", "-i", str(clip), "-frames:v", "1",
              "-vf", "scale=540:-2", "-q:v", "3", str(out)])
+        # small looping clip: whole preview scene, 360x640, no sound (~0.5-1 MB)
+        # skip the scene's opening flash/fade and stop before its fade-out, so every loop shows the design
+        c0, c1 = min(0.9, dur * 0.12), max(dur - 0.8, dur * 0.6)
+        run(["ffmpeg", "-v", "error", "-y", "-ss", f"{c0:.2f}", "-t", f"{c1 - c0:.2f}", "-i", str(clip),
+             "-an", "-vf", "scale=360:-2,fps=24",
+             "-c:v", "libx264", "-profile:v", "main", "-preset", "slow", "-crf", "30",
+             "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(clip_out)])
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    log("preview ready:", out)
+    log("preview ready:", out, f"+ clip ({clip_out.stat().st_size // 1024} KB)")
     return out
 
 
@@ -363,12 +378,18 @@ def publish_templates():
         prev = make_preview(name)
         up = cloudinary.uploader.upload(str(prev), public_id=f"{base}/templates/{name}", overwrite=True,
                                         invalidate=True, resource_type="image")
-        catalog.append({
+        entry = {
             "id": name,
             "title": tpl.get("title", name.replace("_", " ").title()),
             "description": tpl.get("description", ""),
             "preview_url": up["secure_url"],
-        })
+        }
+        clip = prev.with_suffix(".mp4")
+        if clip.exists():
+            upv = cloudinary.uploader.upload(str(clip), public_id=f"{base}/templates/{name}_preview",
+                                             overwrite=True, invalidate=True, resource_type="video")
+            entry["preview_video_url"] = upv["secure_url"]
+        catalog.append(entry)
     tmp = OUTPUT / "_catalog.json"
     OUTPUT.mkdir(exist_ok=True)
     tmp.write_text(json.dumps({"templates": catalog, "updated": time.strftime("%Y-%m-%dT%H:%M:%S")},

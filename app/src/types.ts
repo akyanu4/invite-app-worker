@@ -38,6 +38,7 @@ export type TemplateInfo = {
   title: string;
   description?: string;
   preview_url?: string;
+  preview_video_url?: string;
 };
 
 export type HistoryItem = {

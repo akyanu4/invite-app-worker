@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, TopBar } from '../components';
+import { useInstallPrompt } from '../platform/install';
 import { confirm } from '../platform/notify';
 import { C, s } from '../theme';
 import type { HistoryItem } from '../types';
@@ -16,6 +17,7 @@ export function HomeScreen(props: {
   onSettings: () => void;
 }) {
   const { history, configured } = props;
+  const inst = useInstallPrompt();
   return (
     <SafeAreaView style={s.screen}>
       <TopBar
@@ -38,6 +40,21 @@ export function HomeScreen(props: {
               Add your Cloudinary cloud name and upload preset in Settings.
             </Text>
             <Button title="Open Settings" onPress={props.onSettings} ghost />
+          </View>
+        )}
+
+        {inst.show && (
+          <View style={[s.card, { marginTop: 16, borderColor: C.gold }]}>
+            <Text style={{ color: C.text, fontWeight: '700' }}>Install this app</Text>
+            <Text style={[s.p, { marginTop: 4, fontSize: 14 }]}>
+              {inst.canPrompt
+                ? 'Add it to your home screen so it opens like a normal app.'
+                : inst.isIOS
+                  ? 'In Safari, tap the Share button, then “Add to Home Screen”.'
+                  : 'In Chrome, tap the ⋮ menu, then “Install app” or “Add to Home screen”.'}
+            </Text>
+            {inst.canPrompt && <Button title="Install" onPress={inst.install} />}
+            <Button title="Not now" ghost onPress={inst.dismiss} />
           </View>
         )}
 
