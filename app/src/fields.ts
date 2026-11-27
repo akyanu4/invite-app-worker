@@ -120,7 +120,7 @@ export const CAPS_KEYS = new Set(
 
 /** A short title for history lists. */
 export function inviteTitle(fields: Fields, events: InviteEvent[]): string {
-  const who = fields.groom_short || fields.groom_name || 'Invitation';
-  const what = events[0]?.title || fields.couple_title || '';
-  return what ? `${who} · ${what}` : who;
+  const who = fields.groom_short || fields.groom_name || '';
+  const what = events[events.length - 1]?.title || fields.couple_title || 'Invitation';
+  return who ? `${who}'s ${what}` : what;
 }

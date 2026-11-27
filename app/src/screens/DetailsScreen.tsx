@@ -1,24 +1,39 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, TopBar } from '../components';
+import { Button, DesignChip, Header, IconButton, StepBar } from '../components';
 import { CAPS_KEYS, EVENT_FIELDS, SAMPLE_EVENTS, SAMPLE_FIELDS, SECTIONS, emptyEvent } from '../fields';
 import { notify } from '../platform/notify';
-import { C, s } from '../theme';
-import type { Fields, InviteEvent } from '../types';
+import { C, F, s } from '../theme';
+import type { Fields, InviteEvent, TemplateInfo } from '../types';
+
+function Field(props: { label: string; value: string; hint?: string; caps?: boolean; onChange: (v: string) => void }) {
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={s.label}>{props.label}</Text>
+      <TextInput
+        style={s.input}
+        value={props.value}
+        placeholder={props.hint}
+        placeholderTextColor={C.faint}
+        autoCapitalize={props.caps ? 'characters' : 'words'}
+        onChangeText={props.onChange}
+      />
+    </View>
+  );
+}
 
 export function DetailsScreen(props: {
   initialFields: Fields;
   initialEvents: InviteEvent[];
-  designTitle: string;
+  design: TemplateInfo;
   onChangeDesign: (fields: Fields, events: InviteEvent[]) => void;
   onBack: () => void;
   onSubmit: (fields: Fields, events: InviteEvent[]) => void;
 }) {
   const [fields, setFields] = useState<Fields>(props.initialFields);
-  const [events, setEvents] = useState<InviteEvent[]>(
-    props.initialEvents.length ? props.initialEvents : [emptyEvent()]
-  );
+  const [events, setEvents] = useState<InviteEvent[]>(props.initialEvents.length ? props.initialEvents : [emptyEvent()]);
 
   const setField = (k: string, v: string) => setFields((f) => ({ ...f, [k]: CAPS_KEYS.has(k) ? v.toUpperCase() : v }));
   const setEventField = (i: number, k: keyof InviteEvent, v: string, caps?: boolean) =>
@@ -26,12 +41,12 @@ export function DetailsScreen(props: {
 
   function submit() {
     if (!fields.groom_short && !fields.groom_name) {
-      notify('Missing name', "Enter at least the groom's name.");
+      notify("Add the groom's name", "Fill in at least the groom's short name or full name.");
       return;
     }
     const filled = events.filter((e) => e.title || e.date || e.venue);
     if (!filled.length) {
-      notify('Missing event', 'Add at least one event with a date and venue.');
+      notify('Add an event', 'Each video needs at least one event with a date and venue.');
       return;
     }
     props.onSubmit(fields, filled);
@@ -39,84 +54,98 @@ export function DetailsScreen(props: {
 
   return (
     <SafeAreaView style={s.screen}>
-      <TopBar
-        title="Invitation details"
+      <Header
+        title="Details"
         onBack={props.onBack}
         right={
           <Pressable
-            hitSlop={10}
+            hitSlop={8}
+            accessibilityRole="button"
             onPress={() => {
               setFields(SAMPLE_FIELDS);
               setEvents(SAMPLE_EVENTS);
             }}
           >
-            <Text style={[s.link, { fontSize: 14 }]}>Example</Text>
+            <Text style={{ fontFamily: F.semi, fontSize: 14, color: C.maroon, padding: 6 }}>Use example</Text>
           </Pressable>
         }
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-          <View style={[s.card, s.row, { justifyContent: 'space-between', backgroundColor: C.goldLight }]}>
-            <Text style={{ color: C.text }}>
-              Design: <Text style={{ fontWeight: '700' }}>{props.designTitle}</Text>
-            </Text>
-            <Pressable hitSlop={10} onPress={() => props.onChangeDesign(fields, events)}>
-              <Text style={[s.link, { fontSize: 14 }]}>Change</Text>
-            </Pressable>
-          </View>
-          <Text style={s.p}>Leave a box empty to leave that line out. Long lines shrink to fit automatically.</Text>
+        <ScrollView contentContainerStyle={[s.column, s.scroll]} keyboardShouldPersistTaps="handled">
+          <StepBar step={2} />
+          <DesignChip design={props.design} onChange={() => props.onChangeDesign(fields, events)} />
+          <Text style={[s.small, { marginBottom: 18 }]}>Leave a box empty to leave that line out. Long lines shrink to fit.</Text>
 
           {SECTIONS.map((sec) => (
-            <View key={sec.title}>
-              <Text style={s.h2}>{sec.title}</Text>
-              <View style={s.card}>
+            <View key={sec.title} style={{ marginBottom: 10 }}>
+              <Text style={[s.section, { marginBottom: 12 }]}>{sec.title}</Text>
+              <View style={[s.panel, { paddingBottom: 4 }]}>
                 {sec.fields.map((f) => (
-                  <View key={f.key}>
-                    <Text style={s.label}>{f.label}</Text>
-                    <TextInput
-                      style={s.input}
-                      value={fields[f.key] ?? ''}
-                      placeholder={f.hint}
-                      placeholderTextColor="#B5AB9C"
-                      autoCapitalize={f.caps ? 'characters' : 'words'}
-                      onChangeText={(v) => setField(f.key, v)}
-                    />
-                  </View>
+                  <Field
+                    key={f.key}
+                    label={f.label}
+                    value={fields[f.key] ?? ''}
+                    hint={f.hint}
+                    caps={f.caps}
+                    onChange={(v) => setField(f.key, v)}
+                  />
                 ))}
               </View>
             </View>
           ))}
 
-          <Text style={s.h2}>Events (one card each)</Text>
+          <Text style={[s.section, { marginTop: 6 }]}>Events</Text>
+          <Text style={[s.small, { marginTop: 2, marginBottom: 12 }]}>Each event gets its own card in the video.</Text>
           {events.map((ev, i) => (
-            <View key={i} style={s.card}>
-              <View style={[s.row, { justifyContent: 'space-between' }]}>
-                <Text style={{ fontWeight: '700', color: C.goldDark }}>Event {i + 1}</Text>
+            <View key={i} style={[s.panel, { paddingBottom: 4, marginBottom: 12 }]}>
+              <View style={[s.row, { justifyContent: 'space-between', marginBottom: 8, marginTop: -6 }]}>
+                <Text style={{ fontFamily: F.bold, fontSize: 14, color: C.maroon }}>Event {i + 1}</Text>
                 {events.length > 1 && (
-                  <Pressable hitSlop={10} onPress={() => setEvents((l) => l.filter((_, j) => j !== i))}>
-                    <Text style={{ color: C.danger }}>Remove</Text>
-                  </Pressable>
+                  <IconButton
+                    icon="trash-outline"
+                    label={`Remove event ${i + 1}`}
+                    color={C.muted}
+                    onPress={() => setEvents((l) => l.filter((_, j) => j !== i))}
+                  />
                 )}
               </View>
               {EVENT_FIELDS.map((f) => (
-                <View key={f.key}>
-                  <Text style={s.label}>{f.label}</Text>
-                  <TextInput
-                    style={s.input}
-                    value={ev[f.key]}
-                    placeholder={f.hint}
-                    placeholderTextColor="#B5AB9C"
-                    autoCapitalize={f.caps ? 'characters' : 'words'}
-                    onChangeText={(v) => setEventField(i, f.key, v, f.caps)}
-                  />
-                </View>
+                <Field
+                  key={f.key}
+                  label={f.label}
+                  value={ev[f.key]}
+                  hint={f.hint}
+                  caps={f.caps}
+                  onChange={(v) => setEventField(i, f.key, v, f.caps)}
+                />
               ))}
             </View>
           ))}
-          <Button title="+ Add another event" ghost onPress={() => setEvents((l) => [...l, emptyEvent()])} />
-
-          <Button title="Make the video" onPress={submit} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setEvents((l) => [...l, emptyEvent()])}
+            style={({ pressed }) => [
+              s.row,
+              {
+                justifyContent: 'center',
+                height: 48,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderStyle: 'dashed',
+                borderColor: C.gold,
+                backgroundColor: pressed ? C.goldSoft : 'transparent',
+              },
+            ]}
+          >
+            <Ionicons name="add" size={20} color={C.maroon} />
+            <Text style={{ fontFamily: F.semi, fontSize: 15, color: C.maroon, marginLeft: 6 }}>Add another event</Text>
+          </Pressable>
         </ScrollView>
+        <SafeAreaView edges={['bottom']} style={s.footer}>
+          <View style={s.column}>
+            <Button title="Create video" icon="sparkles-outline" onPress={submit} />
+          </View>
+        </SafeAreaView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

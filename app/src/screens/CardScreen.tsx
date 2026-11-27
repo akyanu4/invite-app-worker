@@ -1,14 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { Image, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, TopBar } from '../components';
+import { Button, DesignChip, Header, StepBar } from '../components';
 import { notify } from '../platform/notify';
-import { C, s } from '../theme';
+import { C, F, s } from '../theme';
+import type { TemplateInfo } from '../types';
 
 export type PickedCard = { uri: string; mimeType?: string | null };
 
-export function CardScreen(props: { designTitle: string; onBack: () => void; onMake: (card: PickedCard) => void }) {
+export function CardScreen(props: { design: TemplateInfo; onBack: () => void; onMake: (card: PickedCard) => void }) {
   const [card, setCard] = useState<PickedCard | null>(null);
 
   async function pick(fromCamera: boolean) {
@@ -20,47 +22,64 @@ export function CardScreen(props: { designTitle: string; onBack: () => void; onM
           ? await ImagePicker.requestCameraPermissionsAsync()
           : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      notify('Permission needed', fromCamera ? 'Allow camera access to photograph the card.' : 'Allow photo access to pick the card.');
+      notify('Permission needed', fromCamera ? 'Allow camera access to photograph the card.' : 'Allow photo access to choose the card.');
       return;
     }
     const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.85 };
     const res = fromCamera ? await ImagePicker.launchCameraAsync(opts) : await ImagePicker.launchImageLibraryAsync(opts);
-    if (!res.canceled && res.assets?.[0]) {
-      setCard({ uri: res.assets[0].uri, mimeType: res.assets[0].mimeType });
-    }
+    if (!res.canceled && res.assets?.[0]) setCard({ uri: res.assets[0].uri, mimeType: res.assets[0].mimeType });
   }
 
   return (
     <SafeAreaView style={s.screen}>
-      <TopBar title="Scan a card" onBack={props.onBack} />
-      <ScrollView contentContainerStyle={s.scroll}>
-        <Text style={[s.p, { marginBottom: 8 }]}>
-          Design: <Text style={{ fontWeight: '700', color: C.text }}>{props.designTitle}</Text>
-        </Text>
-        <Text style={s.p}>
-          Take a clear, straight photo of the printed card in good light. The names, dates and venues are read
-          automatically. You can correct anything afterwards.
-        </Text>
+      <Header title="Scan a card" onBack={props.onBack} />
+      <ScrollView contentContainerStyle={[s.column, s.scroll]}>
+        <StepBar step={2} />
+        <DesignChip design={props.design} />
 
         {card ? (
-          <View style={[s.card, { padding: 8, marginTop: 16 }]}>
+          <View style={[s.panel, { padding: 8 }]}>
             <Image source={{ uri: card.uri }} style={{ width: '100%', aspectRatio: 0.72, borderRadius: 8 }} resizeMode="contain" />
           </View>
         ) : (
           <View
-            style={[
-              s.card,
-              { marginTop: 16, height: 220, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed' },
-            ]}
+            style={{
+              height: 260,
+              borderRadius: 14,
+              borderWidth: 1.5,
+              borderStyle: 'dashed',
+              borderColor: C.gold,
+              backgroundColor: C.surface,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: 32,
+            }}
           >
-            <Text style={{ color: C.muted }}>No card photo yet</Text>
+            <Ionicons name="document-text-outline" size={40} color={C.gold} />
+            <Text style={[s.body, { fontFamily: F.semi, marginTop: 10, textAlign: 'center' }]}>Photograph the printed card</Text>
+            <Text style={[s.small, { textAlign: 'center', marginTop: 4 }]}>
+              Hold the phone straight above it in good light. Names, dates and venues are read for you, and you can
+              correct them after.
+            </Text>
           </View>
         )}
 
-        <Button title={card ? 'Retake photo' : 'Take photo'} onPress={() => pick(true)} ghost={!!card} />
-        <Button title="Choose from gallery" onPress={() => pick(false)} ghost />
-        {card && <Button title="Make the video" onPress={() => props.onMake(card)} />}
+        <View style={[s.row, { marginTop: 14 }]}>
+          <Button
+            title={card ? 'Retake' : 'Take photo'}
+            icon="camera-outline"
+            variant="secondary"
+            onPress={() => pick(true)}
+            style={{ flex: 1, marginRight: 10 }}
+          />
+          <Button title="From gallery" icon="images-outline" variant="secondary" onPress={() => pick(false)} style={{ flex: 1 }} />
+        </View>
       </ScrollView>
+      <SafeAreaView edges={['bottom']} style={s.footer}>
+        <View style={s.column}>
+          <Button title="Create video" icon="sparkles-outline" disabled={!card} onPress={() => card && props.onMake(card)} />
+        </View>
+      </SafeAreaView>
     </SafeAreaView>
   );
 }

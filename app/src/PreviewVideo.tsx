@@ -1,9 +1,9 @@
 import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useEffect } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 /** A small muted looping clip, used for the design previews. */
-export function PreviewVideo(props: { uri: string; style?: StyleProp<ViewStyle> }) {
+export function PreviewVideo(props: { uri: string; poster?: string; style?: StyleProp<ViewStyle> }) {
   const player = useVideoPlayer(props.uri, (p) => {
     p.loop = true;
     p.muted = true;
@@ -16,5 +16,11 @@ export function PreviewVideo(props: { uri: string; style?: StyleProp<ViewStyle> 
     });
     return () => sub.remove();
   }, [player]);
-  return <VideoView player={player} style={props.style} contentFit="cover" nativeControls={false} playsInline />;
+  // The still picture sits underneath, so the box is never empty while the clip loads.
+  return (
+    <View style={[{ overflow: 'hidden' }, props.style]}>
+      {!!props.poster && <Image source={{ uri: props.poster }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+      <VideoView player={player} style={{ width: '100%', height: '100%' }} contentFit="cover" nativeControls={false} playsInline />
+    </View>
+  );
 }

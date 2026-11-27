@@ -2,18 +2,13 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useEffect, useState } from 'react';
 import { Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, TopBar } from '../components';
-import { C, s } from '../theme';
+import { Button, Header, StepBar } from '../components';
 import { notify } from '../platform/notify';
 import { SAVE_LABEL, saveVideo, shareVideo } from '../platform/video';
+import { C, s } from '../theme';
 import type { HistoryItem } from '../types';
 
-export function ResultScreen(props: {
-  item: HistoryItem;
-  fromCard: boolean;
-  onHome: () => void;
-  onEdit: () => void;
-}) {
+export function ResultScreen(props: { item: HistoryItem; fromCard: boolean; onHome: () => void; onEdit: () => void }) {
   const { item } = props;
   const player = useVideoPlayer(item.videoUrl, (p) => {
     p.loop = true;
@@ -35,9 +30,9 @@ export function ResultScreen(props: {
     try {
       setBusy('share');
       const msg = await shareVideo(item);
-      if (msg) notify('Downloaded', msg);
+      if (msg) notify('Video downloaded', msg);
     } catch (e) {
-      notify('Could not share', e instanceof Error ? e.message : String(e));
+      notify('Couldn’t open sharing', e instanceof Error ? e.message : String(e));
     } finally {
       setBusy('');
     }
@@ -48,7 +43,7 @@ export function ResultScreen(props: {
       setBusy('save');
       notify('Saved', await saveVideo(item));
     } catch (e) {
-      notify('Could not save', e instanceof Error ? e.message : String(e));
+      notify('Couldn’t save the video', e instanceof Error ? e.message : String(e));
     } finally {
       setBusy('');
     }
@@ -56,37 +51,40 @@ export function ResultScreen(props: {
 
   return (
     <SafeAreaView style={s.screen}>
-      <TopBar title={item.title} onBack={props.onHome} />
-      <ScrollView contentContainerStyle={s.scroll}>
-        <View style={{ alignItems: 'center' }}>
-          <VideoView
-            player={player}
-            nativeControls
-            contentFit="contain"
-            style={{ width: '78%', aspectRatio: 9 / 16, borderRadius: 12, backgroundColor: '#000' }}
-          />
+      <Header title="Your video" onBack={props.onHome} />
+      <ScrollView contentContainerStyle={[s.column, s.scroll]}>
+        <StepBar step={3} done />
+        <View style={{ width: '72%', maxWidth: 300, alignSelf: 'center', aspectRatio: 9 / 16, borderRadius: 16, overflow: 'hidden', backgroundColor: '#000' }}>
+          <VideoView player={player} nativeControls playsInline contentFit="contain" style={{ width: '100%', height: '100%' }} />
         </View>
-
-        <Button
-          title="Share on WhatsApp"
-          color={C.whatsapp}
-          onPress={share}
-          busy={busy === 'share'}
-          disabled={!!busy}
-        />
-        <Text style={[s.p, { fontSize: 12, textAlign: 'center', marginTop: 6 }]}>
-          Opens the share menu. Pick WhatsApp, then the chats or groups.
-        </Text>
-        <Button title={SAVE_LABEL} ghost onPress={save} busy={busy === 'save'} disabled={!!busy} />
-        <Button title={props.fromCard ? 'Fix the details & remake' : 'Edit details & remake'} ghost onPress={props.onEdit} />
-
+        <Text style={[s.title, { textAlign: 'center', marginTop: 16 }]}>{item.title}</Text>
+        {Platform.OS === 'web' && <Text style={[s.small, { textAlign: 'center', marginTop: 2 }]}>Tap the speaker on the video to hear the music.</Text>}
         {props.fromCard && (
-          <Text style={[s.p, { fontSize: 13, marginTop: 14 }]}>
-            The details were read from the card automatically. Check names and dates before sending, and use “Fix the
-            details” if anything is wrong.
-          </Text>
+          <View style={[s.panel, { marginTop: 16, backgroundColor: C.goldSoft, borderColor: C.goldSoft }]}>
+            <Text style={[s.small, { color: C.ink }]}>
+              The details were read from the card automatically. Check the names and dates before you send it, and use
+              Edit details if anything needs correcting.
+            </Text>
+          </View>
         )}
       </ScrollView>
+      <SafeAreaView edges={['bottom']} style={s.footer}>
+        <View style={s.column}>
+          <Button title="Share on WhatsApp" icon="logo-whatsapp" variant="whatsapp" onPress={share} busy={busy === 'share'} disabled={!!busy} />
+          <View style={[s.row, { marginTop: 10 }]}>
+            <Button
+              title={SAVE_LABEL}
+              icon="download-outline"
+              variant="secondary"
+              onPress={save}
+              busy={busy === 'save'}
+              disabled={!!busy}
+              style={{ flex: 1, marginRight: 10 }}
+            />
+            <Button title="Edit details" icon="create-outline" variant="secondary" onPress={props.onEdit} style={{ flex: 1 }} />
+          </View>
+        </View>
+      </SafeAreaView>
     </SafeAreaView>
   );
 }

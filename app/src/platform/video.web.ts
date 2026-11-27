@@ -1,6 +1,6 @@
 import type { HistoryItem } from '../types';
 
-export const SAVE_LABEL = 'Download video';
+export const SAVE_LABEL = 'Download';
 
 function fileName(item: HistoryItem) {
   return `${item.title.replace(/[^\w -]+/g, '').trim().replace(/\s+/g, '-') || 'invitation'}.mp4`;

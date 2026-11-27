@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Invitation Videos",
+    "name": "Quick Invitations",
     "slug": "invitation-videos",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,7 +22,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "name": "Invitation Videos",
+      "name": "Quick Invitations",
       "shortName": "Invitations",
       "backgroundColor": "#FBF7EF",
       "output": "single"

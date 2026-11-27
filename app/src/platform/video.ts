@@ -3,7 +3,7 @@ import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import type { HistoryItem } from '../types';
 
-export const SAVE_LABEL = 'Save to gallery';
+export const SAVE_LABEL = 'Save';
 
 async function download(item: HistoryItem): Promise<File> {
   const file = new File(Paths.cache, `${item.id}.mp4`);
