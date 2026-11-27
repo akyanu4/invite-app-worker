@@ -18,8 +18,13 @@ worker start at every boot and stop the PC from sleeping. Then fill in `.env`.
 
 Background worker (Windows, after setup with auto start):
 - log: `logs\worker.log`
-- stop: `schtasks /End /TN InvitationVideoWorker` · start: `schtasks /Run /TN InvitationVideoWorker`
-- remove: `schtasks /Delete /TN InvitationVideoWorker /F`
+- **restart after an update:** double-click `restart_worker.bat` (asks for Administrator).
+  `schtasks /End` alone stops the task but leaves the old Python worker running.
+- remove auto start: `schtasks /Delete /TN InvitationVideoWorker /F`
+
+**Updating:** unzip or copy the new files *into* this folder (replace when asked), not into a new
+`invite_worker` folder inside it, then run `restart_worker.bat`. The log should then show
+`published N template(s)`.
 
 ## 1. Manual install (Windows)
 

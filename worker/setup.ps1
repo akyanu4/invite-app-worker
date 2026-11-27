@@ -236,6 +236,6 @@ Write-Host "  1. Open .env in Notepad and fill in CLOUDINARY_URL (and ANTHROPIC_
 Write-Host "  2. Try:  .venv\Scripts\python worker.py watch-cloudinary"
 if (-not $AutoStart) { Write-Host "  3. To start it at every boot, run setup again with -AutoStart (or use setup.bat and answer y)." }
 Write-Host ""
-Write-Host "Useful: Stop the background worker   ->  schtasks /End /TN $TaskName"
+Write-Host "Useful: Restart after an update     ->  double-click restart_worker.bat"
 Write-Host "        Remove auto start            ->  schtasks /Delete /TN $TaskName /F"
 Read-Host "Press Enter to close"
