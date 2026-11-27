@@ -132,15 +132,45 @@ def card_prompt(cat):
     for sec in cat.get("sections", []):
         for f in sec["fields"]:
             how = "in CAPITALS" if f.get("caps") else "in normal case"
-            lines.append(f'    "{f["key"]}": "{f["label"]} ({how}), e.g. {f.get("hint", "")}"')
-    ev = ", ".join(f'"{f["key"]}": "{f["label"]}{" in CAPITALS" if f.get("caps") else ""}"'
+            lines.append(f'- {f["key"]}: {f["label"]} ({how}), e.g. {f.get("hint", "")}')
+    ev = "; ".join(f'{f["key"]}: {f["label"]}{" in CAPITALS" if f.get("caps") else ""}'
                    for f in cat.get("events", {}).get("fields", []))
     return (f"You are reading a photo of {cat.get('card_hint', 'an invitation card')} (English, may include Urdu/Hindi).\n"
-            "Return ONLY a JSON object, no other text, with this shape:\n"
-            "{\n  \"fields\": {\n" + ",\n".join(lines) + "\n  },\n"
-            "  \"events\": [ {" + ev + "} ]\n}\n"
-            "List every event printed on the card, in date order. Keep each line short (under ~35 characters). "
-            "Use \"\" for anything not on the card. If a name isn't printed (e.g. the bride's), use the wording the card uses.")
+            "Fill in the save_card tool with what is printed on the card.\n"
+            "fields:\n" + "\n".join(lines) + "\n"
+            f"events (one entry per event, in date order): {ev}\n"
+            "Keep each line short (under ~35 characters). Use an empty string for anything not on the card. "
+            "If a name isn't printed (e.g. the bride's), use the wording the card uses.")
+
+
+def card_tool(cat):
+    """A form the model must fill in, so the answer always comes back as valid data."""
+    def props(defs):
+        return {f["key"]: {"type": "string", "description": f["label"]} for f in defs}
+    field_defs = [f for sec in cat.get("sections", []) for f in sec["fields"]]
+    event_defs = cat.get("events", {}).get("fields", [])
+    return {
+        "name": "save_card",
+        "description": "Save the details read from the invitation card.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "fields": {"type": "object", "properties": props(field_defs)},
+                "events": {"type": "array", "items": {"type": "object", "properties": props(event_defs)}},
+            },
+            "required": ["fields", "events"],
+        },
+    }
+
+
+def _clean_card(got):
+    """Keeps only text values, whatever shape came back."""
+    if not isinstance(got, dict):
+        return {"fields": {}, "events": []}
+    fields = {k: str(v) for k, v in (got.get("fields") or {}).items() if isinstance(v, (str, int, float))}
+    events = [{k: str(v) for k, v in e.items() if isinstance(v, (str, int, float))}
+              for e in (got.get("events") or []) if isinstance(e, dict)]
+    return {"fields": fields, "events": events}
 
 
 AI_MODELS = {
@@ -159,19 +189,37 @@ def read_card(image_url, category="marriage", quality="accurate"):
     model = AI_MODELS.get(quality, AI_MODELS["accurate"])()
     client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY
     log(f"reading card ({quality}) with", model)
-    msg = client.messages.create(
-        model=model,
-        max_tokens=2000,
-        messages=[{"role": "user", "content": [
-            {"type": "image", "source": {"type": "url", "url": image_url}},
-            {"type": "text", "text": card_prompt(cat)},
-        ]}],
-    )
-    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
-    m = re.search(r"\{.*\}", text, re.S)
-    if not m:
-        raise ValueError("Could not read the card: " + text[:300])
-    return json.loads(m.group(0))
+    tool = card_tool(cat)
+    last_error = None
+    for attempt in (1, 2):
+        try:
+            msg = client.messages.create(
+                model=model,
+                max_tokens=3000,
+                tools=[tool],
+                tool_choice={"type": "tool", "name": "save_card"},
+                messages=[{"role": "user", "content": [
+                    {"type": "image", "source": {"type": "url", "url": image_url}},
+                    {"type": "text", "text": card_prompt(cat)},
+                ]}],
+            )
+            for blk in msg.content:
+                if getattr(blk, "type", "") == "tool_use" and blk.name == "save_card":
+                    got = _clean_card(blk.input)
+                    if any(v.strip() for v in got["fields"].values()) or got["events"]:
+                        return got
+            last_error = "nothing could be read from the photo"
+        except anthropic.AuthenticationError:
+            raise ValueError("The Claude API key in the worker's .env was not accepted. Check ANTHROPIC_API_KEY.")
+        except anthropic.APIStatusError as e:
+            if e.status_code in (400, 402) and "credit" in str(e).lower():
+                raise ValueError("The Claude API account is out of credit. Add credit at platform.claude.com.")
+            last_error = str(e)[:200]
+        except anthropic.APIError as e:
+            last_error = str(e)[:200]
+        log(f"card reading attempt {attempt} failed: {last_error}")
+    raise ValueError("The AI couldn't read this card. Try a clearer, straight photo in good light, choose "
+                     "'Most accurate', or type the details instead.")
 
 
 # --------------------------------------------------------------------------- rendering
