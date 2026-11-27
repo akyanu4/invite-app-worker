@@ -37,7 +37,7 @@ export function CardScreen(props: {
 
   return (
     <SafeAreaView style={s.screen}>
-      <Header title="Scan a card" onBack={props.onBack} />
+      <Header title="AI card reader" onBack={props.onBack} />
       <ScrollView contentContainerStyle={[s.column, s.scroll]}>
         <StepBar step={2} />
         <DesignChip design={props.design} />
@@ -60,11 +60,11 @@ export function CardScreen(props: {
               paddingHorizontal: 32,
             }}
           >
-            <Ionicons name="document-text-outline" size={40} color={C.gold} />
+            <Ionicons name="sparkles-outline" size={40} color={C.gold} />
             <Text style={[s.body, { fontFamily: F.semi, marginTop: 10, textAlign: 'center' }]}>Photograph the printed card</Text>
             <Text style={[s.small, { textAlign: 'center', marginTop: 4 }]}>
-              Hold the phone straight above it in good light. Names, dates and venues are read for you, and you can
-              correct them after.
+              Our AI reads the names, dates and venues, in English or Urdu, and builds the video from them. Hold the
+              phone straight above the card in good light. You can correct anything after.
             </Text>
           </View>
         )}
@@ -80,7 +80,7 @@ export function CardScreen(props: {
           <Button title="From gallery" icon="images-outline" variant="secondary" onPress={() => pick(false)} style={{ flex: 1 }} />
         </View>
 
-        <Text style={[s.section, { marginTop: 24, marginBottom: 10 }]}>Reading the card</Text>
+        <Text style={[s.section, { marginTop: 24, marginBottom: 10 }]}>How should the AI read it?</Text>
         <Choice<AiQuality>
           value={quality}
           onChange={setQuality}

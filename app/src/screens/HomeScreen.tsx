@@ -98,7 +98,7 @@ export function HomeScreen(props: {
 
         <Text style={s.display}>Video invitations for every celebration</Text>
         <Text style={[s.muted, { marginTop: 8, marginBottom: 20 }]}>
-          Pick the occasion and a design, add the details, and share the video on WhatsApp.
+          Pick the occasion and a design, type the details or let our AI read your printed card, and share the video on WhatsApp.
           {price != null ? ` Preview free, ₹${price} to download${shopPrice ? ' (shop price)' : ''}.` : ''}
         </Text>
 

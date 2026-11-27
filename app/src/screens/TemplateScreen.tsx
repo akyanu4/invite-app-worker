@@ -60,7 +60,10 @@ export function TemplateScreen(props: {
       <SafeAreaView edges={['bottom']} style={s.footer}>
         <View style={s.column}>
           <Button title="Type the details" icon="create-outline" onPress={props.onType} />
-          <Button title="Scan a printed card" icon="camera-outline" variant="secondary" onPress={props.onScan} style={{ marginTop: 10 }} />
+          <Button title="Let AI read your printed card" icon="sparkles-outline" variant="secondary" onPress={props.onScan} style={{ marginTop: 10 }} />
+          <Text style={[s.small, { textAlign: 'center', marginTop: 8 }]}>
+            Already have a printed card? Take a photo and our AI fills in every name, date and venue for you.
+          </Text>
         </View>
       </SafeAreaView>
     </SafeAreaView>

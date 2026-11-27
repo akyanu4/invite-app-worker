@@ -188,7 +188,7 @@ export function ResultScreen(props: {
           {item.fromCard && (
             <View style={[s.panel, { marginTop: 16, backgroundColor: C.goldSoft, borderColor: C.goldSoft }]}>
               <Text style={[s.small, { color: C.ink }]}>
-                The details were read from the card automatically. Check the names and dates in the preview, and use Edit
+                Our AI read these details from your card. Check the names and dates in the preview, and use Edit
                 details if anything needs correcting{paid ? '' : ' before you pay'}.
               </Text>
             </View>

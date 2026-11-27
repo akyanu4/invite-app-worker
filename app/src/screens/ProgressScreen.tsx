@@ -160,7 +160,7 @@ export function ProgressScreen(props: {
                 state={phase === 'queued' ? 'active' : phase === 'rendering' ? 'done' : 'todo'}
                 title="Waiting in the queue"
               />
-              <Stage state={phase === 'rendering' ? 'active' : 'todo'} title={isCard ? 'Reading the card and animating' : 'Animating your invitation'} />
+              <Stage state={phase === 'rendering' ? 'active' : 'todo'} title={isCard ? 'AI reading the card, then animating' : 'Animating your invitation'} />
               <Stage state="todo" title="Free preview ready" />
             </View>
             {sent ? (
