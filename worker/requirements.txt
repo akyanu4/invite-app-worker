@@ -1,0 +1,6 @@
+numpy
+opencv-python-headless
+Pillow
+python-dotenv
+cloudinary
+anthropic

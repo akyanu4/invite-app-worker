@@ -1,0 +1,17 @@
+# secrets and local settings
+.env
+!.env.example
+**/.env
+# worker local files
+worker/.venv/
+worker/output/
+worker/logs/
+worker/tools/
+worker/jobs/inbox/
+__pycache__/
+# generated previews
+worker/templates/*/preview.jpg
+# media that must not be public (purchased / third-party). Keep your own copies locally.
+worker/templates/rose_gold/background.mp4
+worker/templates/**/music.m4a
+worker/templates/**/*.mp3

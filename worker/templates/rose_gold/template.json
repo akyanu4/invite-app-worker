@@ -1,0 +1,351 @@
+{
+  "name": "rose_gold",
+  "title": "Rose Gold",
+  "description": "Roses and a gold ring, with photo frames for the couple.",
+  "order": 1,
+  "preview_scene": "couple",
+  "preview_at": 0.75,
+  "width": 1080,
+  "height": 1920,
+  "fps": "30000/1001",
+  "background": "background.mp4",
+  "music": "music.m4a",
+  "music_align": "end",
+  "fonts": {
+    "script": "GreatVibes-Regular.ttf",
+    "caps": "Cinzel-VF.ttf",
+    "serif": "Playfair-VF.ttf"
+  },
+  "text_fade_out_frames": 22,
+  "scenes": [
+    {
+      "id": "couple",
+      "start_frame": 0,
+      "end_frame": 230,
+      "transition_in": "cut",
+      "slots": [
+        {
+          "text": "{couple_title}",
+          "font": "caps",
+          "size": 34,
+          "max_width": 560,
+          "x": 540,
+          "y": 686,
+          "in": 21,
+          "dur": 18
+        },
+        {
+          "text": "{groom_short}",
+          "font": "script",
+          "size": 175,
+          "max_width": 600,
+          "x": 540,
+          "y": 818,
+          "in": 43,
+          "dur": 24
+        },
+        {
+          "text": "{couple_joiner}",
+          "font": "script",
+          "size": 82,
+          "max_width": 400,
+          "x": 540,
+          "y": 935,
+          "in": 47,
+          "dur": 24
+        },
+        {
+          "text": "{bride_short}",
+          "font": "script",
+          "size": 128,
+          "max_width": 620,
+          "x": 540,
+          "y": 1040,
+          "in": 50,
+          "dur": 24
+        },
+        {
+          "text": "{couple_line}",
+          "font": "caps",
+          "size": 30,
+          "max_width": 560,
+          "x": 540,
+          "y": 1162,
+          "in": 60,
+          "dur": 30
+        }
+      ]
+    },
+    {
+      "id": "groom",
+      "start_frame": 230,
+      "end_frame": 460,
+      "transition_in": "cut",
+      "slots": [
+        {
+          "text": "{groom_label}",
+          "font": "caps",
+          "size": 40,
+          "max_width": 900,
+          "x": 548,
+          "y": 1190,
+          "in": 9,
+          "dur": 18
+        },
+        {
+          "text": "{groom_name}",
+          "font": "script",
+          "size": 122,
+          "max_width": 930,
+          "x": 548,
+          "y": 1272,
+          "in": 23,
+          "dur": 26
+        },
+        {
+          "text": "{groom_nickname}",
+          "font": "script",
+          "size": 104,
+          "max_width": 800,
+          "x": 548,
+          "y": 1394,
+          "in": 25,
+          "dur": 26
+        },
+        {
+          "type": "divider",
+          "width": 300,
+          "x": 548,
+          "y": 1457,
+          "in": 43,
+          "dur": 20
+        },
+        {
+          "text": "{groom_relation}",
+          "font": "caps",
+          "size": 106,
+          "max_width": 900,
+          "x": 548,
+          "y": 1514,
+          "in": 45,
+          "dur": 22
+        },
+        {
+          "text": "{groom_parents_label}",
+          "font": "caps",
+          "size": 104,
+          "max_width": 980,
+          "x": 548,
+          "y": 1643,
+          "in": 50,
+          "dur": 26
+        },
+        {
+          "text": "{groom_father}",
+          "font": "caps",
+          "size": 110,
+          "max_width": 980,
+          "x": 548,
+          "y": 1775,
+          "in": 55,
+          "dur": 36
+        }
+      ]
+    },
+    {
+      "id": "bride",
+      "start_frame": 460,
+      "end_frame": 701,
+      "transition_in": "cut",
+      "slots": [
+        {
+          "text": "{bride_label}",
+          "font": "caps",
+          "size": 40,
+          "max_width": 900,
+          "x": 548,
+          "y": 1192,
+          "in": 13,
+          "dur": 18
+        },
+        {
+          "text": "{bride_name}",
+          "font": "script",
+          "size": 150,
+          "max_width": 930,
+          "x": 548,
+          "y": 1336,
+          "in": 25,
+          "dur": 26
+        },
+        {
+          "type": "divider",
+          "width": 300,
+          "x": 548,
+          "y": 1468,
+          "in": 75,
+          "dur": 20
+        },
+        {
+          "text": "{bride_relation}",
+          "font": "caps",
+          "size": 92,
+          "max_width": 940,
+          "x": 548,
+          "y": 1538,
+          "in": 43,
+          "dur": 24
+        },
+        {
+          "text": "{bride_parents_label}",
+          "font": "caps",
+          "size": 104,
+          "max_width": 980,
+          "x": 548,
+          "y": 1643,
+          "in": 49,
+          "dur": 26
+        },
+        {
+          "text": "{bride_father}",
+          "font": "caps",
+          "size": 100,
+          "max_width": 980,
+          "x": 548,
+          "y": 1752,
+          "in": 57,
+          "dur": 30
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "repeat": "events",
+      "start_frame": 701,
+      "end_frame": 1025,
+      "transition_in": "cut",
+      "transition_between": "fadewhite",
+      "slots": [
+        {
+          "text": "{title}",
+          "font": "script",
+          "size": 96,
+          "max_width": 600,
+          "x": 525,
+          "y": 778,
+          "in": 28,
+          "dur": 24
+        },
+        {
+          "text": "{date}",
+          "font": "caps",
+          "size": 80,
+          "max_width": 680,
+          "x": 525,
+          "y": 872,
+          "in": 44,
+          "dur": 24
+        },
+        {
+          "text": "{time}",
+          "font": "caps",
+          "size": 56,
+          "max_width": 640,
+          "x": 525,
+          "y": 958,
+          "in": 58,
+          "dur": 24
+        },
+        {
+          "text": "{venue}",
+          "font": "caps",
+          "size": 70,
+          "max_width": 780,
+          "x": 525,
+          "y": 1039,
+          "in": 70,
+          "dur": 24
+        },
+        {
+          "text": "{address1}",
+          "font": "caps",
+          "size": 50,
+          "max_width": 740,
+          "x": 525,
+          "y": 1118,
+          "in": 66,
+          "dur": 28
+        },
+        {
+          "text": "{address2}",
+          "font": "caps",
+          "size": 50,
+          "max_width": 640,
+          "x": 525,
+          "y": 1172,
+          "in": 72,
+          "dur": 28
+        }
+      ]
+    },
+    {
+      "id": "save",
+      "start_frame": 1025,
+      "end_frame": 1440,
+      "transition_in": "fade",
+      "slots": [
+        {
+          "text": "{save_line1}",
+          "font": "serif",
+          "size": 58,
+          "max_width": 500,
+          "x": 530,
+          "y": 806,
+          "in": 10,
+          "dur": 20
+        },
+        {
+          "text": "{save_title}",
+          "font": "script",
+          "size": 128,
+          "max_width": 580,
+          "x": 535,
+          "y": 884,
+          "in": 18,
+          "dur": 24
+        },
+        {
+          "text": "{save_days}",
+          "font": "script",
+          "size": 124,
+          "max_width": 520,
+          "x": 545,
+          "y": 988,
+          "in": 24,
+          "dur": 24
+        },
+        {
+          "text": "{save_dates}",
+          "font": "serif",
+          "size": 60,
+          "max_width": 470,
+          "x": 542,
+          "y": 1086,
+          "in": 46,
+          "dur": 24
+        }
+      ]
+    }
+  ],
+  "defaults": {
+    "couple_joiner": "with",
+    "groom_label": "THE GROOM",
+    "bride_label": "THE BRIDE",
+    "groom_relation": "S/O",
+    "bride_relation": "D/O",
+    "groom_parents_label": "MRS & MR.",
+    "bride_parents_label": "MRS & MR.",
+    "save_line1": "Please",
+    "save_title": "Save the Date"
+  }
+}

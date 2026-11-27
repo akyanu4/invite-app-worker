@@ -1,0 +1,6 @@
+{
+  "id": "from-card-photo",
+  "template": "rose_gold",
+  "card_image_url": "https://res.cloudinary.com/YOUR_CLOUD/image/upload/invites/cards/card.jpg",
+  "fields": {}
+}

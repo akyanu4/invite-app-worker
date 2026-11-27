@@ -1,0 +1,42 @@
+{
+  "id": "sample-valima",
+  "template": "rose_gold",
+  "fields": {
+    "couple_title": "VALIMA CEREMONY",
+    "groom_short": "Ayaan",
+    "couple_joiner": "with",
+    "bride_short": "Sara",
+    "couple_line": "INSHA ALLAH",
+    "groom_name": "Mohammed Ayaan Khan",
+    "groom_nickname": "(Ayaan)",
+    "groom_relation": "S/O",
+    "groom_parents_label": "MRS & MR.",
+    "groom_father": "MOHAMMED SALEEM KHAN SAHAB",
+    "bride_name": "Syeda Sara Hussain",
+    "bride_relation": "D/O",
+    "bride_parents_label": "MRS & MR.",
+    "bride_father": "SYED IMRAN HUSSAIN SAHAB",
+    "save_line1": "Please",
+    "save_title": "Save the Dates",
+    "save_days": "Fri & Sun",
+    "save_dates": "12th & 14th Feb 2027"
+  },
+  "events": [
+    {
+      "title": "Nikah Ceremony",
+      "date": "FRI, 12 FEB 2027",
+      "time": "AFTER ASR",
+      "venue": "MASJID-E-NOOR",
+      "address1": "NEAR CLOCK TOWER, OLD CITY",
+      "address2": "HYDERABAD"
+    },
+    {
+      "title": "Valima Ceremony",
+      "date": "SUN, 14 FEB 2027",
+      "time": "DINNER 8:30 PM",
+      "venue": "PEARL PALACE FUNCTION HALL",
+      "address1": "MAIN ROAD, MEHDIPATNAM",
+      "address2": "HYDERABAD"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Invitation Videos",
+    "slug": "invitation-videos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.amjad.invitationvideos"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FBF7EF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.amjad.invitationvideos"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "name": "Invitation Videos",
+      "shortName": "Invitations",
+      "themeColor": "#B8862F",
+      "backgroundColor": "#FBF7EF",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to photograph invitation cards.",
+          "photosPermission": "Allow $(PRODUCT_NAME) to pick an invitation card photo."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to save invitation videos.",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save invitation videos to your gallery.",
+          "granularPermissions": [
+            "video",
+            "photo"
+          ]
+        }
+      ],
+      "expo-video"
+    ]
+  }
+}
