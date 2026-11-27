@@ -377,11 +377,20 @@ def make_watermarked(src, dst, work):
     label = "PREVIEW  \u2022  QUICK INVITATIONS"
     tw = int(d.textlength(label, font=f)) + 30
     tile = Image.new("RGBA", (tw, 50), (0, 0, 0, 0))
-    ImageDraw.Draw(tile).text((15, 10), label, font=f, fill=(255, 255, 255, 105))
+    ImageDraw.Draw(tile).text((15, 10), label, font=f, fill=(255, 255, 255, 140))
     tile = tile.rotate(28, expand=True, resample=Image.BICUBIC)
     for row, y in enumerate(range(-250, H + 100, 230)):
         for x in range(-tile.width, W + tile.width, tile.width + 40):
             mark.alpha_composite(tile, (x + (row % 2) * (tile.width // 2), y))
+    # big stamp across the middle, so a screen recording isn't usable as the invitation
+    big = _font(FONTS / "Cinzel-VF.ttf", 92)
+    bw = int(d.textlength("PREVIEW", font=big)) + 60
+    stamp = Image.new("RGBA", (bw, 140), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(stamp)
+    sd.rounded_rectangle([4, 4, bw - 4, 136], radius=18, outline=(255, 255, 255, 150), width=5)
+    sd.text((30, 16), "PREVIEW", font=big, fill=(255, 255, 255, 150))
+    stamp = stamp.rotate(28, expand=True, resample=Image.BICUBIC)
+    mark.alpha_composite(stamp, ((W - stamp.width) // 2, (H - stamp.height) // 2))
     d.rectangle([0, H - 70, W, H], fill=(36, 25, 27, 190))
     f2 = _font(FONTS / "Figtree-SemiBold.ttf", 22) if (FONTS / "Figtree-SemiBold.ttf").exists() else _font(FONTS / "Playfair-VF.ttf", 22)
     msg = "Preview \u2013 unlock to download the full video"

@@ -11,20 +11,68 @@ import { SAVE_LABEL, saveVideo, shareVideo } from '../platform/video';
 import { C, F, s } from '../theme';
 import type { AppConfig, HistoryItem, Order } from '../types';
 
-function Player(props: { uri: string }) {
+/**
+ * Plays the video. An unpaid preview gets our own play and sound buttons instead of the browser's
+ * controls (which offer "Download"), and a cover that blocks long-press / right-click "Save video".
+ */
+function Player(props: { uri: string; locked: boolean }) {
   const player = useVideoPlayer(props.uri, (p) => {
     p.loop = true;
     // Browsers only autoplay muted video; tap the speaker icon to hear the music.
     if (Platform.OS === 'web') p.muted = true;
     p.play();
   });
+  const [playing, setPlaying] = useState(true);
+  const [muted, setMuted] = useState(Platform.OS === 'web');
   useEffect(() => {
-    const sub = player.addListener('statusChange', ({ status }) => {
+    const a = player.addListener('statusChange', ({ status }) => {
       if (status === 'readyToPlay' && !player.playing) player.play();
     });
-    return () => sub.remove();
+    const b = player.addListener('playingChange', ({ isPlaying }) => setPlaying(isPlaying));
+    return () => {
+      a.remove();
+      b.remove();
+    };
   }, [player]);
-  return <VideoView player={player} nativeControls playsInline contentFit="contain" style={{ width: '100%', height: '100%' }} />;
+
+  if (!props.locked) {
+    return <VideoView player={player} nativeControls playsInline contentFit="contain" style={{ width: '100%', height: '100%' }} />;
+  }
+  const round = { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' } as const;
+  return (
+    <View style={{ width: '100%', height: '100%' }}>
+      <VideoView player={player} nativeControls={false} playsInline contentFit="contain" allowsPictureInPicture={false} style={{ width: '100%', height: '100%' }} />
+      {/* cover: taps toggle play; the video element itself is never pressed, so no "Save video" menu */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={playing ? 'Pause preview' : 'Play preview'}
+        onPress={() => (playing ? player.pause() : player.play())}
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+        // @ts-expect-error web-only: block the browser's right-click menu on the preview
+        onContextMenu={(e: { preventDefault: () => void }) => e.preventDefault()}
+      >
+        {!playing && (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={[round, { width: 64, height: 64, borderRadius: 32 }]}>
+              <Ionicons name="play" size={30} color="#fff" style={{ marginLeft: 4 }} />
+            </View>
+          </View>
+        )}
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={muted ? 'Turn sound on' : 'Turn sound off'}
+        onPress={() => {
+          player.muted = !muted;
+          setMuted(!muted);
+        }}
+        hitSlop={8}
+        style={[round, { position: 'absolute', right: 10, bottom: 10 }]}
+      >
+        <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={22} color="#fff" />
+      </Pressable>
+    </View>
+  );
 }
 
 const busyStates = new Set(['queued', 'rendering']);
@@ -176,7 +224,7 @@ export function ResultScreen(props: {
           <StepBar step={3} done={paid} />
           <View style={{ width: '72%', maxWidth: 300, alignSelf: 'center', aspectRatio: 9 / 16, borderRadius: 16, overflow: 'hidden', backgroundColor: '#000' }}>
             {(paid ? order.final_url : order.preview_url) ? (
-              <Player key={paid ? 'final' : 'preview'} uri={(paid ? order.final_url : order.preview_url)!} />
+              <Player key={paid ? 'final' : 'preview'} uri={(paid ? order.final_url : order.preview_url)!} locked={!paid} />
             ) : null}
           </View>
           <Text style={[s.title, { textAlign: 'center', marginTop: 16 }]}>{item.title}</Text>
