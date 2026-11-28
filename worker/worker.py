@@ -190,36 +190,71 @@ def read_card(image_url, category="marriage", quality="accurate"):
     client = anthropic.Anthropic()  # uses ANTHROPIC_API_KEY
     log(f"reading card ({quality}) with", model)
     tool = card_tool(cat)
+    prompt = card_prompt(cat) + "\nAnswer only by calling the save_card tool."
+    # Forcing the tool is the most reliable, but some models (e.g. Sonnet 5.5) refuse a forced
+    # tool_choice; for those we ask nicely and also accept a JSON answer written as text.
+    forced = model not in _NO_FORCED_TOOL
     last_error = None
-    for attempt in (1, 2):
+    for attempt in (1, 2, 3):
         try:
             msg = client.messages.create(
                 model=model,
-                max_tokens=3000,
+                max_tokens=4000,
                 tools=[tool],
-                tool_choice={"type": "tool", "name": "save_card"},
+                tool_choice={"type": "tool", "name": "save_card"} if forced else {"type": "auto"},
                 messages=[{"role": "user", "content": [
                     {"type": "image", "source": {"type": "url", "url": image_url}},
-                    {"type": "text", "text": card_prompt(cat)},
+                    {"type": "text", "text": prompt},
                 ]}],
             )
+            got = None
             for blk in msg.content:
                 if getattr(blk, "type", "") == "tool_use" and blk.name == "save_card":
                     got = _clean_card(blk.input)
-                    if any(v.strip() for v in got["fields"].values()) or got["events"]:
-                        return got
+            if got is None:  # answered in text: take the JSON out of it
+                text = "".join(getattr(b, "text", "") for b in msg.content if getattr(b, "type", "") == "text")
+                got = _clean_card(_json_from_text(text))
+            if any(v.strip() for v in got["fields"].values()) or got["events"]:
+                return got
             last_error = "nothing could be read from the photo"
         except anthropic.AuthenticationError:
             raise ValueError("The Claude API key in the worker's .env was not accepted. Check ANTHROPIC_API_KEY.")
+        except anthropic.BadRequestError as e:
+            if forced and "tool_choice" in str(e):
+                _NO_FORCED_TOOL.add(model)
+                forced = False
+                log(f"{model} does not accept a forced tool; asking without forcing")
+                continue
+            if "credit" in str(e).lower():
+                raise ValueError("The Claude API account is out of credit. Add credit at platform.claude.com.")
+            last_error = str(e)[:200]
         except anthropic.APIStatusError as e:
-            if e.status_code in (400, 402) and "credit" in str(e).lower():
+            if "credit" in str(e).lower():
                 raise ValueError("The Claude API account is out of credit. Add credit at platform.claude.com.")
             last_error = str(e)[:200]
         except anthropic.APIError as e:
             last_error = str(e)[:200]
         log(f"card reading attempt {attempt} failed: {last_error}")
-    raise ValueError("The AI couldn't read this card. Try a clearer, straight photo in good light, choose "
-                     "'Most accurate', or type the details instead.")
+    other = "Approximate" if quality == "accurate" else "Most accurate"
+    raise ValueError(f"The AI couldn't read this card. Try a clearer, straight photo in good light, try "
+                     f"'{other}', or type the details instead.")
+
+
+_NO_FORCED_TOOL = set()
+
+
+def _json_from_text(text):
+    """Best-effort: the first {...} block in the text, tolerating trailing commas."""
+    m = re.search(r"\{.*\}", text or "", re.S)
+    if not m:
+        return {}
+    raw = m.group(0)
+    for candidate in (raw, re.sub(r",\s*([}\]])", r"\1", raw)):
+        try:
+            return json.loads(candidate)
+        except ValueError:
+            pass
+    return {}
 
 
 # --------------------------------------------------------------------------- rendering
