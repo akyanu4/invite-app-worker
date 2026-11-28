@@ -8,6 +8,43 @@
       "card_hint": "a wedding invitation (Nikah, Valima, Walima, Mehndi, Haldi, Sangeet, Baraat, Shaadi)",
       "sections": [
         {
+          "title": "Opening",
+          "fields": [
+            {
+              "key": "bismillah_line1",
+              "label": "Bismillah line 1 (clear both lines to skip)",
+              "hint": "In the name of Allah,"
+            },
+            {
+              "key": "bismillah_line2",
+              "label": "Bismillah line 2",
+              "hint": "the Most Beneficent, the Most Merciful"
+            },
+            {
+              "key": "invite_label",
+              "label": "Invitation heading",
+              "hint": "INVITED BY",
+              "caps": true
+            },
+            {
+              "key": "invite_hosts",
+              "label": "Hosts (leave empty to skip this card)",
+              "hint": "MRS & MR. MOHAMMED SALEEM KHAN",
+              "caps": true
+            },
+            {
+              "key": "invite_line1",
+              "label": "Invitation line 1",
+              "hint": "request the pleasure of your company"
+            },
+            {
+              "key": "invite_line2",
+              "label": "Invitation line 2",
+              "hint": "at the wedding of their son"
+            }
+          ]
+        },
+        {
           "title": "Couple card",
           "fields": [
             {
@@ -124,6 +161,27 @@
               "hint": "12th & 14th Feb 2027"
             }
           ]
+        },
+        {
+          "title": "Closing",
+          "fields": [
+            {
+              "key": "closing_line",
+              "label": "Closing line",
+              "hint": "We look forward to your presence"
+            },
+            {
+              "key": "compliments_label",
+              "label": "Compliments heading",
+              "hint": "WITH BEST COMPLIMENTS FROM",
+              "caps": true
+            },
+            {
+              "key": "compliments",
+              "label": "From",
+              "hint": "The Khan & Hussain families"
+            }
+          ]
         }
       ],
       "events": {
@@ -176,7 +234,12 @@
         "groom_parents_label": "MRS & MR.",
         "bride_parents_label": "MRS & MR.",
         "save_line1": "Please",
-        "save_title": "Save the Date"
+        "save_title": "Save the Date",
+        "bismillah_line1": "In the name of Allah,",
+        "bismillah_line2": "the Most Beneficent, the Most Merciful",
+        "invite_label": "INVITED BY",
+        "closing_line": "We look forward to your presence",
+        "compliments_label": "WITH BEST COMPLIMENTS FROM"
       },
       "title_fields": [
         "groom_short",
@@ -201,7 +264,11 @@
           "save_line1": "Please",
           "save_title": "Save the Dates",
           "save_days": "Fri & Sun",
-          "save_dates": "12th & 14th Feb 2027"
+          "save_dates": "12th & 14th Feb 2027",
+          "invite_hosts": "MRS & MR. MOHAMMED SALEEM KHAN",
+          "invite_line1": "request the pleasure of your company",
+          "invite_line2": "at the wedding of their son",
+          "compliments": "The Khan & Hussain families"
         },
         "events": [
           {

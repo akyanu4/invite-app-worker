@@ -20,7 +20,7 @@ from pathlib import Path
 
 import numpy as np
 import cv2
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent
 FONTS = ROOT / "fonts"
@@ -85,7 +85,56 @@ def _stylize(A, ext=3):
     return out
 
 
-def text_png(text, font_path, size, max_w, path):
+def _ink(A, color):
+    """Dark-ink text for light backgrounds: solid colour, slightly lighter at the top, soft shadow."""
+    h, w = A.shape
+    ys = np.nonzero(A.max(1) > 0.1)[0]
+    y0, y1 = (ys.min(), ys.max()) if len(ys) else (0, h)
+    t = np.clip((np.arange(h) - y0) / max(1, y1 - y0), 0, 1)[:, None, None]
+    c = np.array(color, np.float32)
+    face = np.broadcast_to(c * (1.18 - 0.22 * t), (h, w, 3)).clip(0, 255).astype(np.float32)
+    out = np.zeros((h, w, 4), np.float32)
+    out[..., :3] = (60, 40, 30)
+    out[..., 3] = cv2.GaussianBlur(np.roll(np.roll(A, 3, 0), 3, 1), (0, 0), 3) * 0.22
+    a = A[..., None]
+    oa = out[..., 3:4]
+    na = a + oa * (1 - a)
+    out[..., :3] = (face * a + out[..., :3] * oa * (1 - a)) / np.maximum(na, 1e-6)
+    out[..., 3:4] = na
+    return out
+
+
+def _style(A, style, ext=3):
+    """style: None/"gold" for the gold bevel, or an (r, g, b) ink colour."""
+    if style is None or style == "gold":
+        return _stylize(A, ext)
+    return _ink(A, style)
+
+
+def _soft_copy(src, dst, sigma):
+    """Blurred copy of a transparent PNG (blurred with premultiplied alpha, so edges don't go dark)."""
+    a = np.asarray(Image.open(src).convert("RGBA"), np.float32) / 255
+    pm = a[..., :3] * a[..., 3:4]
+    pm = cv2.GaussianBlur(pm, (0, 0), sigma)
+    al = cv2.GaussianBlur(a[..., 3], (0, 0), sigma)[..., None]
+    rgb = pm / np.maximum(al, 1e-4)
+    Image.fromarray((np.concatenate([rgb, al], 2).clip(0, 1) * 255).astype(np.uint8), "RGBA").save(dst)
+
+
+def art_png(mask_path, height, max_w, style, path):
+    """Pre-drawn artwork (e.g. Arabic calligraphy) stored as a white-on-transparent mask, coloured like text."""
+    m = Image.open(mask_path).convert("RGBA").split()[-1]
+    scale = height / m.height
+    if max_w and m.width * scale > max_w:
+        scale = max_w / m.width
+    m = m.resize((max(1, int(m.width * scale)), max(1, int(m.height * scale))), Image.LANCZOS)
+    pad = 40
+    im = Image.new("L", (m.width + 2 * pad, m.height + 2 * pad), 0)
+    im.paste(m, (pad, pad))
+    return _save_rgba(_style(np.asarray(im, np.float32) / 255, style), path)
+
+
+def text_png(text, font_path, size, max_w, path, style=None):
     while True:
         f = _font(font_path, size)
         bb = f.getbbox(text)
@@ -95,10 +144,10 @@ def text_png(text, font_path, size, max_w, path):
     pad = 40
     im = Image.new("L", (bb[2] - bb[0] + 2 * pad, bb[3] - bb[1] + 2 * pad), 0)
     ImageDraw.Draw(im).text((pad - bb[0], pad - bb[1]), text, font=f, fill=255)
-    return _save_rgba(_stylize(np.asarray(im, np.float32) / 255), path)
+    return _save_rgba(_style(np.asarray(im, np.float32) / 255, style), path)
 
 
-def divider_png(width, path):
+def divider_png(width, path, style=None):
     h = 40
     im = Image.new("L", (width + 40, h), 0)
     d = ImageDraw.Draw(im)
@@ -108,7 +157,7 @@ def divider_png(width, path):
         d.polygon([(x, cy), (x + 16 * s, cy - 7), (x + 30 * s, cy), (x + 16 * s, cy + 7)], fill=255)
     m = (x0 + x1) // 2
     d.polygon([(m - 12, cy), (m, cy - 9), (m + 12, cy), (m, cy + 9)], fill=255)
-    return _save_rgba(_stylize(np.asarray(im, np.float32) / 255, 2), path)
+    return _save_rgba(_style(np.asarray(im, np.float32) / 255, style, 2), path)
 
 
 def _save_rgba(rgba, path):
@@ -272,41 +321,79 @@ def probe_duration(path):
 
 def render_scene(tpl, tdir, scene, fields, work, idx):
     fps = Fraction(tpl["fps"])
-    start = scene["start_frame"] / fps
     nframes = scene["end_frame"] - scene["start_frame"]
+    # "bg_from": take this scene's background from another stretch of the video (added scenes reuse calm parts)
+    start = scene.get("bg_from", scene["start_frame"]) / fps
     dur = nframes / fps
     fo = tpl.get("text_fade_out_frames", 14) / fps
     fonts = {k: FONTS / v for k, v in tpl["fonts"].items()}
     fmt = defaultdict(str, fields)
 
+    def style_of(s):  # a slot's colour: its own, the design's colour for that font, its ink colour, else gold
+        c = s.get("color") or (tpl.get("ink_colors") or {}).get(s.get("font", "art")) or tpl.get("ink_color")
+        return tuple(c) if c else None
+
+    cap = tpl.get("max_text_width")  # designs with a narrow frame keep text inside it
+
+    def mw(s):
+        m = s.get("max_width")
+        return min(m, cap) if (m and cap) else (m or cap)
+
     pngs = []
     for k, s in enumerate(scene["slots"]):
         p = work / f"s{idx}_{k}.png"
         if s.get("type") == "divider":
-            w, h = divider_png(s.get("width", 300), p)
+            w, h = divider_png(s.get("width", 300), p, style_of(s))
+        elif s.get("type") == "art":
+            if s.get("if") and not fmt[s["if"]].strip():
+                continue
+            w, h = art_png(ROOT / "art" / s["src"], s["size"], mw(s), style_of(s), p)
         else:
             text = s["text"].format_map(fmt).strip()
             if not text:
                 continue
-            w, h = text_png(text, fonts[s["font"]], s["size"], s.get("max_width"), p)
+            w, h = text_png(text, fonts[s["font"]], s["size"], mw(s), p, style_of(s))
         pngs.append((p, w, h, s))
 
     cmd = ["ffmpeg", "-v", "error", "-y", "-ss", f"{float(start):.6f}", "-t", f"{float(dur):.6f}",
            "-i", str(tdir / (scene.get("background_override") or tpl["background"]))]
-    for p, *_ in pngs:
+    reveal = scene.get("reveal") or tpl.get("text_reveal", "rise")
+    inputs = []
+    for p, w, h, s in pngs:
+        inputs.append(p)
+        if (s.get("reveal") or reveal) == "blur":  # a soft copy that dissolves into the sharp one
+            bp = p.with_name(p.stem + "_blur.png")
+            _soft_copy(p, bp, 9)
+            inputs.append(bp)
+    for p in inputs:
         cmd += ["-loop", "1", "-framerate", tpl["fps"], "-t", f"{float(dur):.6f}", "-i", str(p)]
     fc = [f"[0:v]fps={tpl['fps']},setpts=PTS-STARTPTS,format=yuv420p[b0]"]
-    for k, (p, w, h, s) in enumerate(pngs, 1):
+    n, i = 0, 1
+    for p, w, h, s in pngs:
         tin = float(s["in"] / fps)
         d = max(float(s.get("dur", 22) / fps), 0.1)
         tout = float(dur - fo)
         x = int(round(s["x"] - w / 2))
         y = int(round(s["y"] - h / 2))
-        fc.append(f"[{k}:v]format=rgba,fade=t=in:st={tin:.3f}:d={d:.3f}:alpha=1,"
-                  f"fade=t=out:st={tout:.3f}:d={float(fo):.3f}:alpha=1[t{k}]")
-        fc.append(f"[b{k-1}][t{k}]overlay=x={x}:y='{y}+14*max(0,1-(t-{tin:.3f})/{d:.3f})':eval=frame[b{k}]")
+        if (s.get("reveal") or reveal) == "blur":
+            d2 = d * 1.4
+            fc.append(f"[{i + 1}:v]format=rgba,fade=t=in:st={tin:.3f}:d={d2 * 0.45:.3f}:alpha=1,"
+                      f"fade=t=out:st={tin + d2 * 0.45:.3f}:d={d2 * 0.55:.3f}:alpha=1[u{i}]")
+            fc.append(f"[b{n}][u{i}]overlay=x={x}:y={y}[b{n + 1}]")
+            n += 1
+            fc.append(f"[{i}:v]format=rgba,fade=t=in:st={tin + d2 * 0.25:.3f}:d={d2 * 0.75:.3f}:alpha=1,"
+                      f"fade=t=out:st={tout:.3f}:d={float(fo):.3f}:alpha=1[t{i}]")
+            fc.append(f"[b{n}][t{i}]overlay=x={x}:y={y}[b{n + 1}]")
+            n += 1
+            i += 2
+        else:
+            fc.append(f"[{i}:v]format=rgba,fade=t=in:st={tin:.3f}:d={d:.3f}:alpha=1,"
+                      f"fade=t=out:st={tout:.3f}:d={float(fo):.3f}:alpha=1[t{i}]")
+            fc.append(f"[b{n}][t{i}]overlay=x={x}:y='{y}+14*max(0,1-(t-{tin:.3f})/{d:.3f})':eval=frame[b{n + 1}]")
+            n += 1
+            i += 1
     out = work / f"scene_{idx:02d}.mp4"
-    cmd += ["-filter_complex", ";".join(fc), "-map", f"[b{len(pngs)}]", "-an",
+    cmd += ["-filter_complex", ";".join(fc), "-map", f"[b{n}]", "-an",
             "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p", str(out)]
     run(cmd)
     return out, float(dur)
@@ -325,6 +412,9 @@ def build_scene_list(tpl, job_fields, events):
     """Expands repeating scenes. Returns [(scene, fields, transition_in)]."""
     items = []
     for sc in tpl["scenes"]:
+        keys = sc.get("skip_if_empty")
+        if keys and not any(str(job_fields.get(k) or "").strip() for k in keys):
+            continue  # e.g. no hosts typed -> no "Invited by" scene
         if sc.get("repeat") == "events":
             for i, ev in enumerate(events):
                 f = dict(job_fields)

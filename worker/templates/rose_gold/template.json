@@ -19,11 +19,146 @@
   "text_fade_out_frames": 22,
   "scenes": [
     {
+      "id": "bismillah",
+      "start_frame": 0,
+      "end_frame": 180,
+      "bg_from": 1025,
+      "transition_in": "cut",
+      "skip_if_empty": [
+        "bismillah_line1",
+        "bismillah_line2"
+      ],
+      "slots": [
+        {
+          "type": "art",
+          "src": "calligraphy/allah_medallion.png",
+          "size": 290,
+          "max_width": 860,
+          "x": 540,
+          "y": 640,
+          "in": 6,
+          "dur": 34,
+          "reveal": "blur"
+        },
+        {
+          "type": "art",
+          "src": "calligraphy/bismillah.png",
+          "size": 140,
+          "max_width": 900,
+          "x": 540,
+          "y": 885,
+          "in": 24,
+          "dur": 30,
+          "reveal": "blur"
+        },
+        {
+          "type": "divider",
+          "width": 280,
+          "x": 540,
+          "y": 985,
+          "in": 38,
+          "dur": 20
+        },
+        {
+          "text": "{bismillah_line1}",
+          "font": "serif",
+          "size": 52,
+          "max_width": 860,
+          "x": 540,
+          "y": 1065,
+          "in": 44,
+          "dur": 24
+        },
+        {
+          "text": "{bismillah_line2}",
+          "font": "serif",
+          "size": 52,
+          "max_width": 860,
+          "x": 540,
+          "y": 1135,
+          "in": 50,
+          "dur": 24
+        }
+      ]
+    },
+    {
+      "id": "invite",
+      "start_frame": 0,
+      "end_frame": 210,
+      "bg_from": 0,
+      "transition_in": "fade",
+      "skip_if_empty": [
+        "invite_hosts"
+      ],
+      "slots": [
+        {
+          "text": "{invite_label}",
+          "font": "caps",
+          "size": 40,
+          "max_width": 760,
+          "x": 540,
+          "y": 650,
+          "in": 12,
+          "dur": 24
+        },
+        {
+          "type": "divider",
+          "width": 280,
+          "x": 540,
+          "y": 712,
+          "in": 20,
+          "dur": 20
+        },
+        {
+          "text": "{invite_hosts}",
+          "font": "caps",
+          "size": 60,
+          "max_width": 900,
+          "x": 540,
+          "y": 820,
+          "in": 26,
+          "dur": 24,
+          "reveal": "blur"
+        },
+        {
+          "text": "{invite_line1}",
+          "font": "serif",
+          "size": 52,
+          "max_width": 900,
+          "x": 540,
+          "y": 950,
+          "in": 40,
+          "dur": 24
+        },
+        {
+          "text": "{invite_line2}",
+          "font": "serif",
+          "size": 52,
+          "max_width": 900,
+          "x": 540,
+          "y": 1025,
+          "in": 48,
+          "dur": 24
+        }
+      ]
+    },
+    {
       "id": "couple",
       "start_frame": 0,
       "end_frame": 230,
-      "transition_in": "cut",
+      "transition_in": "fade",
       "slots": [
+        {
+          "type": "art",
+          "src": "calligraphy/azwaja.png",
+          "size": 78,
+          "max_width": 700,
+          "x": 540,
+          "y": 566,
+          "in": 4,
+          "dur": 30,
+          "reveal": "blur"
+        },
         {
           "text": "{couple_title}",
           "font": "caps",
@@ -42,7 +177,8 @@
           "x": 540,
           "y": 818,
           "in": 43,
-          "dur": 24
+          "dur": 24,
+          "reveal": "blur"
         },
         {
           "text": "{couple_joiner}",
@@ -62,7 +198,8 @@
           "x": 540,
           "y": 1040,
           "in": 50,
-          "dur": 24
+          "dur": 24,
+          "reveal": "blur"
         },
         {
           "text": "{couple_line}",
@@ -333,6 +470,69 @@
           "y": 1086,
           "in": 46,
           "dur": 24
+        }
+      ]
+    },
+    {
+      "id": "closing",
+      "start_frame": 0,
+      "end_frame": 270,
+      "bg_from": 1065,
+      "transition_in": "fade",
+      "skip_if_empty": [
+        "closing_line",
+        "compliments"
+      ],
+      "slots": [
+        {
+          "type": "art",
+          "src": "calligraphy/barakallah.png",
+          "size": 130,
+          "max_width": 860,
+          "x": 540,
+          "y": 650,
+          "in": 10,
+          "dur": 30,
+          "reveal": "blur"
+        },
+        {
+          "text": "{closing_line}",
+          "font": "serif",
+          "size": 52,
+          "max_width": 900,
+          "x": 540,
+          "y": 800,
+          "in": 30,
+          "dur": 24
+        },
+        {
+          "type": "divider",
+          "width": 280,
+          "x": 540,
+          "y": 880,
+          "in": 40,
+          "dur": 20
+        },
+        {
+          "text": "{compliments_label}",
+          "font": "caps",
+          "size": 40,
+          "max_width": 800,
+          "x": 540,
+          "y": 965,
+          "in": 48,
+          "dur": 24
+        },
+        {
+          "text": "{compliments}",
+          "font": "script",
+          "size": 116,
+          "max_width": 900,
+          "x": 540,
+          "y": 1085,
+          "in": 58,
+          "dur": 26,
+          "reveal": "blur"
         }
       ]
     }

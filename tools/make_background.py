@@ -80,11 +80,12 @@ elif STYLE in WEDDING_STYLES:
     WS = WeddingStyle(STYLE, rng)
     WS.bake()
     BASE = WS.base
-    BORDER = border(color=(196, 152, 72), accent=(214, 175, 100)) if STYLE == 'nikah' else border()
+    BORDER = (border(color=(196, 152, 72), accent=(214, 175, 100)) if STYLE == 'nikah'
+              else np.zeros((H, W, 4), np.float32) if STYLE in ('jharokha', 'doors') else border())
 else:
     sys.exit(f'unknown style {STYLE}')
 
-tex = (np.sin(X / 23.0) * np.sin(Y / 23.0) + np.sin((X + Y) / 31.0)) * (1.2 if STYLE in ('blush', 'nikah') else 0.6 if STYLE == 'haldi' else 2.2)
+tex = (np.sin(X / 23.0) * np.sin(Y / 23.0) + np.sin((X + Y) / 31.0)) * (1.2 if STYLE in ('blush', 'nikah', 'jharokha', 'doors') else 0.6 if STYLE == 'haldi' else 2.2)
 BASE = np.clip(BASE + tex[..., None], 0, 255)
 
 # shared particle field (sparkles / stars / bubbles)
@@ -153,7 +154,7 @@ for f in range(N):
     img = BASE.copy()
     # soft light sweep
     sweep_x = (f * 3.2) % (W * 2.4) - W * 0.7
-    band = np.exp(-((X - sweep_x - (Y - H / 2) * 0.35) / 220) ** 2) * (10 if STYLE in ('blush', 'nikah', 'haldi') else 16)
+    band = np.exp(-((X - sweep_x - (Y - H / 2) * 0.35) / 220) ** 2) * (6 if STYLE in ('jharokha', 'doors') else 10 if STYLE in ('blush', 'nikah', 'haldi') else 16)
     img += band[..., None] * np.array([1.0, 0.95, 0.8])
 
     if STYLE == 'emerald':

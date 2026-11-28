@@ -9,7 +9,7 @@ import cv2
 from PIL import Image, ImageDraw, ImageFilter
 
 W, H = 1080, 1920
-STYLES = ('nikah', 'mehndi', 'valima', 'baraat', 'haldi', 'sangeet')
+STYLES = ('nikah', 'mehndi', 'valima', 'baraat', 'haldi', 'sangeet', 'jharokha', 'doors')
 
 
 def rgba_layer(size, fn, scale=2):
@@ -491,6 +491,187 @@ class Style:
             x = self.nx[i] + 22 * math.sin(self.nph[i] + f * 0.03)
             a = 0.85 * min(1.0, (H - y) / 300, max(0.0, y) / 300)
             paste(img, to_f(self.note), int(x), int(y), a)
+        return img
+
+    # ------------------------------------------------------------------ shared: painted roses for light designs
+    def _rose(self, d, s, cx, cy, r, col, dark):
+        R = lambda v: int(v * s)
+        d.ellipse([R(cx - r), R(cy - r), R(cx + r), R(cy + r)], fill=col + (255,))
+        for k, rr in enumerate((0.78, 0.56, 0.36, 0.18)):
+            a0 = k * 47
+            c2 = tuple(int(col[i] + (dark[i] - col[i]) * (0.25 + 0.18 * k)) for i in range(3))
+            d.arc([R(cx - r * rr), R(cy - r * rr), R(cx + r * rr), R(cy + r * rr)], a0, a0 + 250, fill=c2 + (255,), width=R(max(2, r * 0.09)))
+        d.ellipse([R(cx - r * 0.12), R(cy - r * 0.12), R(cx + r * 0.12), R(cy + r * 0.12)], fill=dark + (255,))
+
+    def _leaf(self, d, s, x, y, ang, ln, col):
+        R = lambda v: int(v * s)
+        ca, sa = math.cos(ang), math.sin(ang)
+        pts = []
+        for t in np.linspace(0, 1, 14):
+            w = ln * 0.32 * math.sin(math.pi * t)
+            pts.append((x + ca * ln * t - sa * w, y + sa * ln * t + ca * w))
+        for t in np.linspace(1, 0, 14):
+            w = -ln * 0.32 * math.sin(math.pi * t)
+            pts.append((x + ca * ln * t - sa * w, y + sa * ln * t + ca * w))
+        d.polygon([(R(px), R(py)) for px, py in pts], fill=col + (255,))
+
+    def _bouquet(self, d, s, cx, cy, flip):
+        sage, sage_d = (150, 172, 140), (112, 138, 104)
+        for k in range(7):
+            ang = math.radians((-160 + k * 28) if flip else (-20 - k * 28))
+            self._leaf(d, s, cx, cy, ang, 120 + 30 * (k % 2), sage if k % 2 else sage_d)
+        for dx, dy, r, col, dark in ((0, 0, 62, (236, 178, 178), (176, 84, 96)), (70 * flip, -40, 46, (250, 236, 228), (214, 170, 160)),
+                                     (-60 * flip, 30, 44, (178, 52, 74), (110, 20, 40)), (40 * flip, 64, 34, (246, 214, 206), (200, 140, 140))):
+            self._rose(d, s, cx + dx, cy + dy, r, col, dark)
+
+    # ------------------------------------------------------------------ IVORY JHAROKHA: arch-shaped card, roses, push-in
+    def setup_jharokha(self):
+        Y, X = np.mgrid[0:H, 0:W].astype(np.float32)
+        t = (Y / H)[..., None]
+        self.base = np.array([236, 214, 200], np.float32) * (1 - t) + np.array([214, 184, 170], np.float32) * t
+        self.text_light = True
+        gold, gold_l = (184, 140, 64), (214, 178, 104)
+
+        def card(d, s):
+            R = lambda v: int(v * s)
+            x0, x1, top, bot, spring = 110, 970, 300, 1660, 560
+            def arch_pts(i):
+                pts = [(x0 + i, bot - i)]
+                for k in range(41):
+                    u = k / 40
+                    pts.append((x0 + i + (540 - x0 - i) * math.sin(u * math.pi / 2) ** 1.5, spring - (spring - top - i) * math.sin(u * math.pi / 2)))
+                pts += [(W - x, y) for x, y in reversed(pts[1:])]
+                pts.append((x1 - i, bot - i))
+                return pts
+            shadow = arch_pts(0)
+            d.polygon([(R(x + 14), R(y + 22)) for x, y in shadow], fill=(120, 80, 70, 70))
+            d.polygon([(R(x), R(y)) for x, y in arch_pts(0)], fill=(253, 248, 238, 255))
+            for i, w_, c in ((14, 5, gold), (30, 2, gold_l), (52, 2, gold_l)):
+                pts = arch_pts(i)
+                d.line([(R(x), R(y)) for x, y in pts + pts[:1]], fill=c + (255,), width=R(w_))
+            # filigree: little dots and leaf-buds between the inner borders
+            pts = arch_pts(41)
+            for k in range(0, len(pts) - 1):
+                (xa, ya), (xb, yb) = pts[k], pts[k + 1]
+                n = max(1, int(math.hypot(xb - xa, yb - ya) / 34))
+                for j in range(n):
+                    x, y = xa + (xb - xa) * j / n, ya + (yb - ya) * j / n
+                    d.ellipse([R(x - 3.5), R(y - 3.5), R(x + 3.5), R(y + 3.5)], fill=gold + (230,))
+            # crown ornament at the apex
+            for r_, a in ((26, 255), (16, 255)):
+                d.ellipse([R(540 - r_), R(top - 40 - r_), R(540 + r_), R(top - 40 + r_)], outline=gold + (a,), width=R(3))
+            d.polygon([(R(540), R(top - 96)), (R(552), R(top - 70)), (R(540), R(top - 60)), (R(528), R(top - 70))], fill=gold + (255,))
+            self._bouquet(d, s, 150, 1640, 1)
+            self._bouquet(d, s, 930, 1640, -1)
+            self._bouquet(d, s, 160, 330, 1)
+
+        self.card = rgba_layer((W, H), card)
+        P = 34
+        self.px, self.py = self.rng.uniform(0, W, P), self.rng.uniform(-H, H, P)
+        self.pv, self.pph = self.rng.uniform(1.0, 2.2, P), self.rng.uniform(0, 6.28, P)
+        self.pc = [(214, 120, 132), (236, 178, 178), (176, 52, 74)]
+        Q = 60
+        self.bx, self.by = self.rng.uniform(0, W, Q), self.rng.uniform(0, H, Q)
+        self.bph = self.rng.uniform(0, 6.28, Q)
+
+    def draw_jharokha(self, img, f):
+        g = glow_dots([(self.bx[i], self.by[i], 14, 0.35 + 0.25 * math.sin(self.bph[i] + f * 0.03)) for i in range(len(self.bx))], 8.0)
+        img += g[..., None] * np.array([255, 240, 220]) * 0.25
+        zoom = 1.0 + 0.05 * min(1.0, f / 1300)  # slow push-in
+        cw, ch = int(W * zoom), int(H * zoom)
+        lay = self.card.resize((cw, ch), Image.BILINEAR).crop(((cw - W) // 2, (ch - H) // 2, (cw - W) // 2 + W, (ch - H) // 2 + H))
+        paste(img, to_f(lay), 0, 0)
+        for i in range(len(self.px)):
+            y = (self.py[i] + self.pv[i] * f) % (H + 60) - 30
+            x = (self.px[i] + 36 * math.sin(self.pph[i] + f * 0.025)) % W
+            ang = (self.pph[i] * 57 + f * 2.2) % 180
+            col = self.pc[i % 3]
+            cv2.ellipse(img, (int(x), int(y)), (12, 7), ang, 0, 360, col, -1, cv2.LINE_AA)
+        return img
+
+    # ------------------------------------------------------------------ GOLDEN DOORS: jali doors open onto a courtyard
+    def setup_doors(self):
+        Y, X = np.mgrid[0:H, 0:W].astype(np.float32)
+        t = (Y / H)[..., None]
+        base = np.array([252, 240, 222], np.float32) * (1 - t) + np.array([236, 214, 190], np.float32) * t
+        glow = np.exp(-(((X - W / 2) / 520) ** 2 + ((Y - 760) / 700) ** 2))[..., None]
+        self.base = base + glow * np.array([10, 8, 2])
+        self.text_light = True
+        gold, gold_d, gold_l = (196, 150, 66), (140, 100, 36), (236, 204, 130)
+        self.dx0, self.dx1, self.dtop, self.dbot = 90, 990, 240, 1780
+
+        def court(d, s):  # the courtyard seen through the doorway: marble arch, pool edge, roses
+            R = lambda v: int(v * s)
+            for i, w_ in ((0, 5), (20, 2)):
+                pts = [(150 + i, 1700)]
+                for k in range(41):
+                    u = k / 40
+                    pts.append((150 + i + (540 - 150 - i) * math.sin(u * math.pi / 2) ** 1.5, 520 - (520 - 300 - i) * math.sin(u * math.pi / 2)))
+                pts += [(W - x, y) for x, y in reversed(pts[1:])]
+                pts.append((930 - i, 1700))
+                d.line([(R(x), R(y)) for x, y in pts], fill=gold + (190,), width=R(w_))
+            d.rectangle([R(60), R(1700), R(W - 60), R(1860)], fill=(238, 226, 210, 255))
+            d.line([(R(60), R(1700)), (R(W - 60), R(1700))], fill=gold + (200,), width=R(3))
+            d.ellipse([R(300), R(1735), R(780), R(1815)], fill=(206, 222, 226, 255))
+            self._bouquet(d, s, 215, 1700, 1)
+            self._bouquet(d, s, 865, 1700, -1)
+        self.baked = [to_f(rgba_layer((W, H), court))]
+
+        def door(d, s):  # one door leaf, 450 x 1540, with a jali panel and floral roundels
+            R = lambda v: int(v * s)
+            w_, h_ = 450, 1540
+            d.rectangle([0, 0, R(w_), R(h_)], fill=(206, 160, 76, 255))
+            d.rectangle([R(10), R(10), R(w_ - 10), R(h_ - 10)], outline=gold_d + (255,), width=R(6))
+            d.rectangle([R(40), R(60), R(w_ - 40), R(h_ - 60)], outline=gold_l + (255,), width=R(4))
+            for y0 in range(120, h_ - 120, 64):  # jali: interlocking diamonds and circles
+                for x0 in range(72, w_ - 60, 64):
+                    d.polygon([(R(x0), R(y0 - 28)), (R(x0 + 28), R(y0)), (R(x0), R(y0 + 28)), (R(x0 - 28), R(y0))], outline=gold_d + (255,), width=R(3))
+                    d.ellipse([R(x0 - 10), R(y0 - 10), R(x0 + 10), R(y0 + 10)], outline=gold_l + (255,), width=R(2))
+            for cy in (300, h_ - 300):
+                d.ellipse([R(w_ / 2 - 90), R(cy - 90), R(w_ / 2 + 90), R(cy + 90)], fill=(220, 178, 92, 255), outline=gold_d + (255,), width=R(5))
+                for k in range(8):
+                    a = 2 * math.pi * k / 8
+                    d.ellipse([R(w_ / 2 + 50 * math.cos(a) - 22), R(cy + 50 * math.sin(a) - 22), R(w_ / 2 + 50 * math.cos(a) + 22), R(cy + 50 * math.sin(a) + 22)], outline=gold_d + (255,), width=R(3))
+            d.ellipse([R(w_ - 60), R(h_ / 2 - 30), R(w_ - 20), R(h_ / 2 + 30)], fill=gold_d + (255,))  # handle
+        self.door = rgba_layer((450, 1540), door)
+
+        def frame(d, s):  # the arch frame that holds the doors, drawn over everything
+            R = lambda v: int(v * s)
+            d.rectangle([0, 0, R(W), R(self.dtop + 10)], fill=(248, 236, 218, 255))
+            d.rectangle([0, 0, R(self.dx0 + 10), R(H)], fill=(248, 236, 218, 255))
+            d.rectangle([R(self.dx1 - 10), 0, R(W), R(H)], fill=(248, 236, 218, 255))
+            d.rectangle([0, R(self.dbot - 4), R(W), R(H)], fill=(248, 236, 218, 255))  # threshold below the doors
+            d.rectangle([R(self.dx0 - 6), R(self.dtop - 6), R(self.dx1 + 6), R(self.dbot + 6)], outline=gold + (255,), width=R(8))
+            d.rectangle([R(self.dx0 - 26), R(self.dtop - 26), R(self.dx1 + 26), R(self.dbot + 26)], outline=gold_l + (255,), width=R(3))
+            d.polygon([(R(540), R(110)), (R(600), R(170)), (R(540), R(210)), (R(480), R(170))], fill=gold + (255,))
+        self.frame = to_f(rgba_layer((W, H), frame))
+        P = 28
+        self.px, self.py = self.rng.uniform(0, W, P), self.rng.uniform(-H, H, P)
+        self.pv, self.pph = self.rng.uniform(1.0, 2.2, P), self.rng.uniform(0, 6.28, P)
+        self.pc = [(214, 120, 132), (236, 178, 178), (176, 52, 74)]
+
+    def draw_doors(self, img, f):
+        # light rays once open
+        open_t = min(1.0, max(0.0, (f - 30) / 90))
+        open_t = open_t * open_t * (3 - 2 * open_t)
+        if open_t > 0:
+            for i in range(len(self.px)):
+                y = (self.py[i] + self.pv[i] * f) % (H + 60) - 30
+                x = (self.px[i] + 36 * math.sin(self.pph[i] + f * 0.025)) % W
+                ang = (self.pph[i] * 57 + f * 2.2) % 180
+                cv2.ellipse(img, (int(x), int(y)), (12, 7), ang, 0, 360, self.pc[i % 3], -1, cv2.LINE_AA)
+        dw, dh = 450, self.dbot - self.dtop
+        door = self.door.resize((dw, dh), Image.BILINEAR)
+        vis = max(8, int(dw * (1 - open_t) + 40 * open_t))  # leaf turns on its hinge: narrows towards the wall
+        shade = 1 - 0.35 * open_t
+        for side in (0, 1):
+            leaf = door if side == 0 else door.transpose(Image.FLIP_LEFT_RIGHT)
+            leaf = leaf.resize((vis, dh), Image.BILINEAR)
+            arr = to_f(leaf)
+            arr[..., :3] *= shade
+            x = self.dx0 if side == 0 else self.dx1 - vis
+            paste(img, arr, x, self.dtop)
+        paste(img, self.frame, 0, 0)
         return img
 
     def bake(self):

@@ -181,3 +181,22 @@ app can play samples. For each order the customer can choose:
   3 minutes, starts from the beginning and repeats if the video is longer.
 
 To add a track: put `<id>.m4a` in `music/`, add it to `music.json`, restart the worker.
+
+## Muslim invitation structure and text styles
+
+Every marriage design runs: **Bismillah** (Allah medallion, the Bismillah in Arabic, an English line) →
+**Invited by** (hosts and two lines; skipped when no hosts are typed) → couple (with *wa khalaqnakum
+azwaja*, 78:8, above the names) → groom → bride → one card per event → save the date →
+**closing** (*Barakallahu lakuma*, a closing line, "with best compliments from"). Customers can clear
+both Bismillah lines to leave the opener out.
+
+- `tools/add_muslim_scenes.py` adds these scenes to every marriage template (safe to run again); the
+  new scenes reuse calm stretches of each background (`bg_from`), and are dropped when their fields are
+  empty (`skip_if_empty`).
+- Arabic phrases are pre-rendered shapes in `art/calligraphy/` (Amiri font, SIL Open Font Licence), so
+  the joined letters look right on any PC. An `"type": "art"` slot colours them like text.
+- Text style: gold bevel by default; light designs set `ink_colors` (per font: script, caps, serif,
+  art) for dark ink. `"text_reveal": "blur"` (or a slot's `"reveal": "blur"`) makes text sharpen into
+  place instead of rising.
+- Light designs: **Ivory Jharokha** and **Golden Doors** (`tools/make_light_templates.py`, styles in
+  `tools/wedding_styles.py`). In Golden Doors the doors open during the Bismillah card.
