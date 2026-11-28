@@ -133,12 +133,15 @@ An empty value (`""`) leaves that line out. Text shrinks automatically to fit it
 ## 8. Templates (designs)
 
 Included:
-- Marriage: **rose_gold** (roses and gold ring), **emerald_gold** (green with a gold mandala and sparkles)
+- Marriage: **rose_gold** (roses and gold ring), **emerald_gold** (green with a gold mandala and sparkles),
+  **nikah_noor** (pearl and gold arch, swaying lanterns), **mehndi_marigold** (green with marigold garlands),
+  **valima_royal** (maroon with a chandelier and rose petals), **baraat_lights** (red with string lights and fireworks)
 - Birthday: **birthday_confetti** (navy with falling confetti)
 - Cradle ceremony: **cradle_moonlight** (crescent moon, stars and clouds)
 - Baby shower: **babyshower_blush** (blush pink with bubbles and hearts)
 
-The backgrounds for the last four are made by `tools/make_background.py` and their music by
+The generated backgrounds (everything except rose_gold) come from `tools/make_background.py`
+(wedding styles live in `tools/wedding_styles.py`) and their music from
 `tools/make_music.py` (both generated here, so free to use). The layouts of the last three come from
 `tools/make_category_templates.py`.
 
@@ -165,3 +168,16 @@ Fonts: Great Vibes, Cinzel and Playfair Display (SIL Open Font License, see `fon
 The rose_gold background and both templates' music come from a purchased/downloaded invitation video.
 That's fine for family use, but get licensed music before selling or publishing an app. The
 emerald_gold background was generated for this project and is yours to use.
+
+
+## Music
+
+`music/` holds the free music library (`music.json` lists the tracks; all made by `tools/make_music.py`):
+Romantic, Royal, Festive dhol, Party and Lullaby. The worker uploads them with the design list so the
+app can play samples. For each order the customer can choose:
+- the design's own music (a template's `music` file, or `music_id` pointing at a library track),
+- a library track (`music_id` in the order), or
+- their own song (`music_url`, uploaded by the app to `invites/songs/`). It is re-encoded, trimmed to
+  3 minutes, starts from the beginning and repeats if the video is longer.
+
+To add a track: put `<id>.m4a` in `music/`, add it to `music.json`, restart the worker.

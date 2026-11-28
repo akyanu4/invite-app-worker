@@ -2,17 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { createOrder, getOrder, uploadCard } from '../api';
+import { createOrder, getOrder, uploadCard, uploadSong } from '../api';
 import { Button, Header, StepBar } from '../components';
 import { PreviewVideo } from '../PreviewVideo';
 import { deviceId } from '../storage';
 import { C, F, s } from '../theme';
-import type { AiQuality, Fields, InviteEvent, Order, TemplateInfo } from '../types';
+import type { AiQuality, Fields, InviteEvent, MusicChoice, Order, TemplateInfo } from '../types';
 import type { PickedCard } from './CardScreen';
 
 export type Request =
-  | { kind: 'details'; category: string; template: string; fields: Fields; events: InviteEvent[] }
-  | { kind: 'card'; category: string; template: string; card: PickedCard; quality: AiQuality };
+  | { kind: 'details'; category: string; template: string; fields: Fields; events: InviteEvent[]; music: MusicChoice }
+  | { kind: 'card'; category: string; template: string; card: PickedCard; quality: AiQuality; music: MusicChoice };
 
 const POLL_MS = 15000;
 const SLOW_AFTER_S = 45 * 60;
@@ -74,7 +74,14 @@ export function ProgressScreen(props: {
         setPhase('sending');
         setError('');
         const { request } = props;
-        const base = { device_id: await deviceId(), category: request.category, template: request.template };
+        const m = request.music;
+        const base = {
+          device_id: await deviceId(),
+          category: request.category,
+          template: request.template,
+          music_id: m.kind === 'library' ? m.id : undefined,
+          music_url: m.kind === 'upload' ? await uploadSong(m.uri, m.name, m.mimeType) : undefined,
+        };
         const created =
           request.kind === 'card'
             ? await createOrder({

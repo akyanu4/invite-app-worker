@@ -26,9 +26,20 @@ export type TemplateInfo = {
   description?: string;
   preview_url?: string;
   preview_video_url?: string;
+  /** Name of the design's own music, when it is one of the library tracks. */
+  music_title?: string;
 };
 
-export type Catalog = { categories: Category[]; templates: TemplateInfo[] };
+/** A track from the free music library (published by the worker). */
+export type MusicTrack = { id: string; title: string; mood?: string; url: string };
+
+/** What plays under the video. */
+export type MusicChoice =
+  | { kind: 'design' }
+  | { kind: 'library'; id: string }
+  | { kind: 'upload'; uri: string; name: string; mimeType?: string };
+
+export type Catalog = { categories: Category[]; templates: TemplateInfo[]; music: MusicTrack[] };
 
 export type AiQuality = 'accurate' | 'approximate';
 
@@ -86,6 +97,8 @@ export type HistoryItem = {
   fields: Fields;
   events: InviteEvent[];
   fromCard?: boolean;
+  /** Design or library music (an uploaded song is not kept on the phone). */
+  music?: MusicChoice;
 };
 
 /** What the share/save helpers need. */

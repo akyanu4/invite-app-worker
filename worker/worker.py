@@ -327,7 +327,7 @@ def build_scene_list(tpl, job_fields, events):
     return items
 
 
-def join_scenes(tpl, clips, music, out_path):
+def join_scenes(tpl, clips, music, out_path, align=None):
     """clips: [(path, dur, transition_in)]"""
     TR = {"fade": ("fade", 0.4), "fadewhite": ("fadewhite", 0.5)}
     cmd = ["ffmpeg", "-v", "error", "-y"]
@@ -351,7 +351,10 @@ def join_scenes(tpl, clips, music, out_path):
     amap = []
     if music and Path(music).exists():
         mdur = probe_duration(music)
-        offset = max(0.0, mdur - length) if tpl.get("music_align", "end") == "end" else 0.0
+        align = align or tpl.get("music_align", "end")
+        offset = max(0.0, mdur - length) if align == "end" else 0.0
+        if mdur < length:  # a short song repeats until the video ends
+            cmd += ["-stream_loop", "-1"]
         cmd += ["-ss", f"{offset:.3f}", "-i", str(music)]
         fade_in = "afade=t=in:d=1.0," if offset > 0 else ""
         fc.append(f"[{len(clips)}:a]{fade_in}afade=t=out:st={max(0, length - 1.5):.3f}:d=1.5,"
@@ -394,13 +397,63 @@ def render_job(job, out_path, preview_path=None):
             log(f"scene {i + 1}: {sc['id']}")
             p, d = render_scene(tpl, tdir, sc, f, work, i)
             clips.append((p, d, tr))
-        length = join_scenes(tpl, clips, tdir / tpl["music"] if tpl.get("music") else None, out_path)
+        music, align = choose_music(job, tpl, tdir, work)
+        length = join_scenes(tpl, clips, music, out_path, align=align)
         log(f"done: {out_path} ({length:.1f}s)")
         if preview_path:
             make_watermarked(out_path, preview_path, work)
         return out_path
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+MUSIC_DIR = ROOT / "music"
+
+
+def music_library():
+    path = MUSIC_DIR / "music.json"
+    if not path.exists():
+        return []
+    return [t for t in json.loads(path.read_text(encoding="utf-8"))["tracks"] if (MUSIC_DIR / f"{t['id']}.m4a").exists()]
+
+
+def choose_music(job, tpl, tdir, work):
+    """The customer's own song, a library track, or the design's own music. Returns (path, align)."""
+    url = (job.get("music_url") or "").strip()
+    if url:
+        if not url.startswith("https://res.cloudinary.com/"):
+            raise ValueError("The song must be uploaded through the app.")
+        dst = Path(work) / "song_upload"
+        try:
+            with urllib.request.urlopen(url, timeout=120) as r, open(dst, "wb") as fh:
+                shutil.copyfileobj(r, fh)
+            song = Path(work) / "song.m4a"  # re-encode: any format the customer had, trimmed to 3 minutes
+            run(["ffmpeg", "-v", "error", "-y", "-i", str(dst), "-vn", "-t", "180", "-ac", "2", "-ar", "44100",
+                 "-c:a", "aac", "-b:a", "192k", str(song)])
+            log("using the customer's own song")
+            return song, "start"
+        except Exception as e:
+            raise ValueError("The song you uploaded could not be used. Try an MP3 or M4A file, or pick music "
+                             "from the list.") from e
+    mid = (job.get("music_id") or "").strip()
+    if mid and (MUSIC_DIR / f"{mid}.m4a").exists():
+        log("using library music:", mid)
+        return MUSIC_DIR / f"{mid}.m4a", "start"
+    if tpl.get("music_id") and (MUSIC_DIR / f"{tpl['music_id']}.m4a").exists():
+        return MUSIC_DIR / f"{tpl['music_id']}.m4a", "start"
+    return (tdir / tpl["music"] if tpl.get("music") else None), None
+
+
+def publish_music():
+    """Uploads the music library so the app can play samples; returns the list for the catalog."""
+    import cloudinary.uploader
+    base = os.environ.get("INVITE_CLOUDINARY_FOLDER", "invites").strip("/")
+    out = []
+    for t in music_library():
+        up = cloudinary.uploader.upload(str(MUSIC_DIR / f"{t['id']}.m4a"), public_id=f"{base}/music/{t['id']}",
+                                        resource_type="video", overwrite=True, invalidate=True)
+        out.append({**t, "url": up["secure_url"]})
+    return out
 
 
 def make_watermarked(src, dst, work):
@@ -523,6 +576,8 @@ def publish_templates():
             "category": tpl.get("category", "marriage"),
             "tags": tpl.get("tags", []),
             "order": tpl.get("order", 100),
+            "music_title": tpl.get("music_title") or next(
+                (t["title"] for t in music_library() if t["id"] == tpl.get("music_id")), ""),
             "preview_url": up["secure_url"],
         }
         clip = prev.with_suffix(".mp4")
@@ -539,7 +594,12 @@ def publish_templates():
                                overwrite=True, invalidate=True)
     if api_enabled():
         cats = [c for c in load_categories().values()]
-        api_post("/api/worker/catalog", {"categories": cats, "templates": catalog})
+        try:
+            music = publish_music()
+        except Exception as e:
+            log("could not upload the music library:", e)
+            music = []
+        api_post("/api/worker/catalog", {"categories": cats, "templates": catalog, "music": music})
         log("sent the design list to", os.environ["INVITE_API_URL"])
     log(f"published {len(catalog)} template(s): " + ", ".join(t["id"] for t in catalog))
     return catalog

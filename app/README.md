@@ -18,6 +18,8 @@ App / website ──▶ Vercel server (api/) ──▶ Postgres (orders, shops, 
   (UTR), and you approve it in **Account → Admin**. The clean video unlocks straight away.
 - **Promo codes:** create them in Admin. 100% makes the video free; you can limit uses and set a last day.
 - **Shops:** register in **Account → Register a shop**; you approve them in Admin.
+- **Music:** each video can use the design's own music, a track from the free library (with a listen
+  button), or the customer's own song file (MP3/M4A up to 15 MB).
 - **Card reading:** "Most accurate" (Claude Sonnet) or "Approximate" (Claude Haiku, faster and cheaper).
 
 ## 1. Vercel setup (once)

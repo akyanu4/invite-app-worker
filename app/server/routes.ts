@@ -107,7 +107,7 @@ async function route(req: Request): Promise<Response> {
   }
   if (m === 'GET' && a === 'catalog') {
     const row = await one('SELECT data, updated_at FROM catalog WHERE id = 1');
-    return json(row ? { ...row.data, updated: row.updated_at } : { categories: [], templates: [] });
+    return json(row ? { music: [], ...row.data, updated: row.updated_at } : { categories: [], templates: [], music: [] });
   }
 
   // ---- shopkeeper accounts
@@ -147,6 +147,9 @@ async function route(req: Request): Promise<Response> {
 
   // ---- card photo upload (signed by the server, so no upload preset is needed)
   if (m === 'POST' && a === 'upload' && b === 'sign') {
+    const x = await body(req).catch(() => ({}) as Record<string, unknown>);
+    // kind "music": a customer's own song (uploaded as a Cloudinary video/audio file)
+    if (x.kind === 'music') return json(cloudinaryUploadSignature(`invites/songs/${randomId('song', 12)}`));
     return json(cloudinaryUploadSignature(`invites/cards/${randomId('card', 12)}`));
   }
 
@@ -172,7 +175,16 @@ async function route(req: Request): Promise<Response> {
     const price = shop && shop.status === 'approved' ? PRICE_SHOP() : PRICE_CUSTOMER();
     const id = randomId('inv', 12);
     const ai = x.ai_quality === 'approximate' ? 'approximate' : 'accurate';
-    const job = { id, category, template, fields, events, card_image_url: cardUrl || undefined, ai_quality: ai };
+    // music: a track from the library (music_id), the customer's own upload (music_url), or the design's own
+    const musicId = /^[a-z0-9_-]{1,40}$/.test(str(x.music_id, 40)) ? str(x.music_id, 40) : undefined;
+    const musicUrl = str(x.music_url, 500);
+    if (musicUrl && !/^https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/.*invites\/songs\//.test(musicUrl)) {
+      throw new HttpError(400, 'Songs must be uploaded through the app.');
+    }
+    const job = {
+      id, category, template, fields, events, card_image_url: cardUrl || undefined, ai_quality: ai,
+      music_id: musicUrl ? undefined : musicId, music_url: musicUrl || undefined,
+    };
     await q(
       'INSERT INTO orders (id, user_id, device_id, category, template, ai_quality, job, price) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
       [id, shop?.id ?? null, device, category, template, ai, JSON.stringify(job), price]
@@ -315,7 +327,7 @@ async function route(req: Request): Promise<Response> {
       const x = await body(req);
       await q(
         'INSERT INTO catalog (id, data, updated_at) VALUES (1, $1, now()) ON CONFLICT (id) DO UPDATE SET data = $1, updated_at = now()',
-        [JSON.stringify({ categories: x.categories ?? [], templates: x.templates ?? [] })]
+        [JSON.stringify({ categories: x.categories ?? [], templates: x.templates ?? [], music: x.music ?? [] })]
       );
       return json({ ok: true });
     }

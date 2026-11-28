@@ -38,9 +38,13 @@ export const getConfig = () => call<AppConfig>('/api/config');
 export async function getCatalog(): Promise<Catalog> {
   try {
     const c = await call<Catalog>(`/api/catalog?cb=${Date.now()}`);
-    return { categories: c.categories?.length ? c.categories : BUNDLED_CATEGORIES, templates: c.templates ?? [] };
+    return {
+      categories: c.categories?.length ? c.categories : BUNDLED_CATEGORIES,
+      templates: c.templates ?? [],
+      music: c.music ?? [],
+    };
   } catch {
-    return { categories: BUNDLED_CATEGORIES, templates: [] };
+    return { categories: BUNDLED_CATEGORIES, templates: [], music: [] };
   }
 }
 
@@ -80,6 +84,29 @@ export async function uploadCard(uri: string, mimeType?: string | null): Promise
   }
 }
 
+/** Uploads the customer's own song (any audio file) with a one-time signature from the server. */
+export async function uploadSong(uri: string, name: string, mimeType?: string | null): Promise<string> {
+  const sig = await call<{ cloud_name: string; api_key: string; timestamp: number; public_id: string; signature: string }>(
+    '/api/upload/sign',
+    { body: { kind: 'music' } }
+  );
+  const p = await photoPart(uri, name || 'song.mp3', mimeType || 'audio/mpeg');
+  try {
+    const form = new FormData();
+    form.append('file', p.part as Blob);
+    form.append('api_key', sig.api_key);
+    form.append('timestamp', String(sig.timestamp));
+    form.append('public_id', sig.public_id);
+    form.append('signature', sig.signature);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloud_name}/video/upload`, { method: 'POST', body: form });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`Your song could not be uploaded: ${body?.error?.message ?? res.status}`);
+    return body.secure_url as string;
+  } finally {
+    p.cleanup();
+  }
+}
+
 export async function createOrder(x: {
   device_id: string;
   category: string;
@@ -88,6 +115,8 @@ export async function createOrder(x: {
   events?: InviteEvent[];
   card_image_url?: string;
   ai_quality?: AiQuality;
+  music_id?: string;
+  music_url?: string;
 }): Promise<Order> {
   return (await call<{ order: Order }>('/api/orders', { body: x, token: await getShopToken() })).order;
 }

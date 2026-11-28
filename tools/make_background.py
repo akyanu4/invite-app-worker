@@ -8,6 +8,8 @@ blush (baby shower). Each has a gradient base, a moving element layer and a bord
 """
 import math, subprocess, sys
 import numpy as np, cv2
+sys.path.insert(0, __import__('os').path.dirname(__file__))
+from wedding_styles import STYLES as WEDDING_STYLES, Style as WeddingStyle
 from PIL import Image, ImageDraw
 
 W, H = 1080, 1920
@@ -74,10 +76,15 @@ elif STYLE == 'moonlight':
 elif STYLE == 'blush':
     BASE = vertical((252, 228, 226), (246, 206, 196))
     BORDER = border(color=(196, 150, 92), accent=(214, 172, 108), round_corners=True)
+elif STYLE in WEDDING_STYLES:
+    WS = WeddingStyle(STYLE, rng)
+    WS.bake()
+    BASE = WS.base
+    BORDER = border(color=(196, 152, 72), accent=(214, 175, 100)) if STYLE == 'nikah' else border()
 else:
     sys.exit(f'unknown style {STYLE}')
 
-tex = (np.sin(X / 23.0) * np.sin(Y / 23.0) + np.sin((X + Y) / 31.0)) * (1.2 if STYLE == 'blush' else 2.2)
+tex = (np.sin(X / 23.0) * np.sin(Y / 23.0) + np.sin((X + Y) / 31.0)) * (1.2 if STYLE in ('blush', 'nikah') else 2.2)
 BASE = np.clip(BASE + tex[..., None], 0, 255)
 
 # shared particle field (sparkles / stars / bubbles)
@@ -138,14 +145,15 @@ def heart_poly(x, y, r):
     return pts
 
 
-proc = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}',
+FRAME_TEST = __import__('os').environ.get('FRAME_TEST')
+proc = None if FRAME_TEST else subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{W}x{H}',
                          '-r', '30000/1001', '-i', '-', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
                          '-pix_fmt', 'yuv420p', OUT], stdin=subprocess.PIPE)
 for f in range(N):
     img = BASE.copy()
     # soft light sweep
     sweep_x = (f * 3.2) % (W * 2.4) - W * 0.7
-    band = np.exp(-((X - sweep_x - (Y - H / 2) * 0.35) / 220) ** 2) * (10 if STYLE == 'blush' else 16)
+    band = np.exp(-((X - sweep_x - (Y - H / 2) * 0.35) / 220) ** 2) * (10 if STYLE in ('blush', 'nikah') else 16)
     img += band[..., None] * np.array([1.0, 0.95, 0.8])
 
     if STYLE == 'emerald':
@@ -204,12 +212,22 @@ for f in range(N):
                 d.ellipse([xx - r * 0.45, yy - r * 0.55, xx - r * 0.15, yy - r * 0.25], fill=(255, 255, 255, 150))
         over(img, np.asarray(lay, np.float32) / 255, 0, 0)
 
+    if STYLE in WEDDING_STYLES:
+        img = WS.draw(img, f)
     over(img, BORDER, 0, 0)
     k = min(1.0, f / 15.0, (N - 1 - f) / 20.0)
     img *= max(0.0, k)
+    if FRAME_TEST:
+        if f in [int(v) for v in FRAME_TEST.split(',')]:
+            from PIL import Image as _I; _I.fromarray(np.clip(img, 0, 255).astype(np.uint8)).save(f'{OUT[:-9]}_f{f}.png')
+        if f >= max(int(v) for v in FRAME_TEST.split(',')):
+            break
+        continue
     proc.stdin.write(np.clip(img, 0, 255).astype(np.uint8).tobytes())
     if f % 200 == 0:
         print(STYLE, 'frame', f, flush=True)
+if FRAME_TEST:
+    sys.exit()
 proc.stdin.close()
 proc.wait()
 import os

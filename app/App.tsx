@@ -22,7 +22,7 @@ import { ResultScreen } from './src/screens/ResultScreen';
 import { TemplateScreen } from './src/screens/TemplateScreen';
 import { addHistory, getAdminToken, getShopToken, loadHistory, removeHistory, setShopToken } from './src/storage';
 import { C } from './src/theme';
-import type { AppConfig, Category, Fields, HistoryItem, InviteEvent, ShopUser, TemplateInfo } from './src/types';
+import type { AppConfig, Category, Fields, HistoryItem, InviteEvent, MusicChoice, MusicTrack, ShopUser, TemplateInfo } from './src/types';
 
 // A small screen switch; the app has a handful of screens, so no navigation library is needed.
 type Route =
@@ -30,9 +30,9 @@ type Route =
   | { name: 'account' }
   | { name: 'admin' }
   | { name: 'template'; design: TemplateInfo }
-  | { name: 'change'; design: TemplateInfo; fields: Fields; events: InviteEvent[] }
+  | { name: 'change'; design: TemplateInfo; fields: Fields; events: InviteEvent[]; music?: MusicChoice }
   | { name: 'card'; design: TemplateInfo }
-  | { name: 'details'; design: TemplateInfo; fields: Fields; events: InviteEvent[] }
+  | { name: 'details'; design: TemplateInfo; fields: Fields; events: InviteEvent[]; music?: MusicChoice }
   | { name: 'progress'; design: TemplateInfo; request: Request }
   | { name: 'result'; item: HistoryItem };
 
@@ -47,6 +47,7 @@ export default function App() {
   });
   const [categories, setCategories] = useState<Category[]>(BUNDLED_CATEGORIES);
   const [templates, setTemplates] = useState<TemplateInfo[] | null>(null);
+  const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [category, setCategory] = useState('marriage');
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [shop, setShop] = useState<ShopUser | null>(null);
@@ -71,6 +72,7 @@ export default function App() {
     getCatalog().then((c) => {
       setCategories(c.categories);
       setTemplates(c.templates);
+      setTracks(c.music);
     });
     getConfig().then(setConfig).catch(() => {});
     loadHistory().then(setHistory);
@@ -160,8 +162,8 @@ export default function App() {
         <DesignScreen
           templates={templates?.filter((t) => (t.category ?? 'marriage') === cat.id) ?? null}
           selected={r.design.id}
-          onBack={() => setRoute({ name: 'details', design: r.design, fields: r.fields, events: r.events })}
-          onPick={(design) => setRoute({ name: 'details', design, fields: r.fields, events: r.events })}
+          onBack={() => setRoute({ name: 'details', design: r.design, fields: r.fields, events: r.events, music: r.music })}
+          onPick={(design) => setRoute({ name: 'details', design, fields: r.fields, events: r.events, music: r.music })}
         />
       );
       break;
@@ -172,9 +174,10 @@ export default function App() {
       screen = (
         <CardScreen
           design={design}
+          tracks={tracks}
           onBack={() => setRoute({ name: 'template', design })}
-          onMake={(card, quality) =>
-            setRoute({ name: 'progress', design, request: { kind: 'card', category: cat.id, template: design.id, card, quality } })
+          onMake={(card, quality, music) =>
+            setRoute({ name: 'progress', design, request: { kind: 'card', category: cat.id, template: design.id, card, quality, music } })
           }
         />
       );
@@ -190,10 +193,12 @@ export default function App() {
           design={design}
           initialFields={route.fields}
           initialEvents={route.events}
-          onChangeDesign={(fields, events) => setRoute({ name: 'change', design, fields, events })}
+          initialMusic={route.music}
+          tracks={tracks}
+          onChangeDesign={(fields, events, music) => setRoute({ name: 'change', design, fields, events, music })}
           onBack={() => setRoute({ name: 'template', design })}
-          onSubmit={(fields, events) =>
-            setRoute({ name: 'progress', design, request: { kind: 'details', category: cat.id, template: design.id, fields, events } })
+          onSubmit={(fields, events, music) =>
+            setRoute({ name: 'progress', design, request: { kind: 'details', category: cat.id, template: design.id, fields, events, music } })
           }
         />
       );
@@ -211,6 +216,7 @@ export default function App() {
         fields,
         events,
         fromCard: request.kind === 'card',
+        music: request.music.kind === 'upload' ? { kind: 'design' } : request.music,
       });
       screen = (
         <ProgressScreen
@@ -219,7 +225,7 @@ export default function App() {
           onHome={home}
           onCancel={() =>
             request.kind === 'details'
-              ? setRoute({ name: 'details', design, fields: request.fields, events: request.events })
+              ? setRoute({ name: 'details', design, fields: request.fields, events: request.events, music: request.music })
               : setRoute({ name: 'card', design })
           }
           onCreated={async (order) => {
@@ -252,7 +258,7 @@ export default function App() {
           item={item}
           config={config}
           onHome={home}
-          onEdit={() => setRoute({ name: 'details', design: { category: item.category, ...designById(item.template) }, fields: item.fields, events: item.events })}
+          onEdit={() => setRoute({ name: 'details', design: { category: item.category, ...designById(item.template) }, fields: item.fields, events: item.events, music: item.music })}
         />
       );
       break;

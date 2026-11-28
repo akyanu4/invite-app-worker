@@ -6,17 +6,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Choice, DesignChip, Header, StepBar } from '../components';
 import { notify } from '../platform/notify';
 import { C, F, s } from '../theme';
-import type { AiQuality, TemplateInfo } from '../types';
+import { MusicPicker } from '../MusicPicker';
+import type { AiQuality, MusicChoice, MusicTrack, TemplateInfo } from '../types';
 
 export type PickedCard = { uri: string; mimeType?: string | null };
 
 export function CardScreen(props: {
   design: TemplateInfo;
+  tracks: MusicTrack[];
   onBack: () => void;
-  onMake: (card: PickedCard, quality: AiQuality) => void;
+  onMake: (card: PickedCard, quality: AiQuality, music: MusicChoice) => void;
 }) {
   const [card, setCard] = useState<PickedCard | null>(null);
   const [quality, setQuality] = useState<AiQuality>('accurate');
+  const [music, setMusic] = useState<MusicChoice>({ kind: 'design' });
 
   async function pick(fromCamera: boolean) {
     // In a browser the file picker / camera asks by itself, so only check permissions in the app.
@@ -89,10 +92,13 @@ export function CardScreen(props: {
             { value: 'approximate', title: 'Approximate', note: 'Faster. Fine for clear, simple cards; check the names after.' },
           ]}
         />
+        <View style={{ marginTop: 26 }}>
+          <MusicPicker tracks={props.tracks} designMusic={props.design.music_title} value={music} onChange={setMusic} />
+        </View>
       </ScrollView>
       <SafeAreaView edges={['bottom']} style={s.footer}>
         <View style={s.column}>
-          <Button title="Create free preview" icon="sparkles-outline" disabled={!card} onPress={() => card && props.onMake(card, quality)} />
+          <Button title="Create free preview" icon="sparkles-outline" disabled={!card} onPress={() => card && props.onMake(card, quality, music)} />
         </View>
       </SafeAreaView>
     </SafeAreaView>

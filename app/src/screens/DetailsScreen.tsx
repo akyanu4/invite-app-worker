@@ -4,23 +4,27 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, DesignChip, Field, Header, IconButton, StepBar } from '../components';
 import { capsKeys, emptyEvent, mainNameKey } from '../fields';
+import { MusicPicker } from '../MusicPicker';
 import { notify } from '../platform/notify';
 import { C, F, s } from '../theme';
-import type { Category, Fields, InviteEvent, TemplateInfo } from '../types';
+import type { Category, Fields, InviteEvent, MusicChoice, MusicTrack, TemplateInfo } from '../types';
 
 export function DetailsScreen(props: {
   category: Category;
   initialFields: Fields;
   initialEvents: InviteEvent[];
   design: TemplateInfo;
-  onChangeDesign: (fields: Fields, events: InviteEvent[]) => void;
+  tracks: MusicTrack[];
+  initialMusic?: MusicChoice;
+  onChangeDesign: (fields: Fields, events: InviteEvent[], music: MusicChoice) => void;
   onBack: () => void;
-  onSubmit: (fields: Fields, events: InviteEvent[]) => void;
+  onSubmit: (fields: Fields, events: InviteEvent[], music: MusicChoice) => void;
 }) {
   const cat = props.category;
   const caps = useMemo(() => capsKeys(cat), [cat]);
   const [fields, setFields] = useState<Fields>(props.initialFields);
   const [events, setEvents] = useState<InviteEvent[]>(props.initialEvents.length ? props.initialEvents : [emptyEvent(cat)]);
+  const [music, setMusic] = useState<MusicChoice>(props.initialMusic ?? { kind: 'design' });
 
   const setField = (k: string, v: string) => setFields((f) => ({ ...f, [k]: caps.has(k) ? v.toUpperCase() : v }));
   const setEventField = (i: number, k: string, v: string, up?: boolean) =>
@@ -39,7 +43,7 @@ export function DetailsScreen(props: {
       notify('Add the date and venue', 'Each video needs at least one event with a date and venue.');
       return;
     }
-    props.onSubmit(fields, filled);
+    props.onSubmit(fields, filled, music);
   }
 
   return (
@@ -65,7 +69,7 @@ export function DetailsScreen(props: {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={[s.column, s.scroll]} keyboardShouldPersistTaps="handled">
           <StepBar step={2} />
-          <DesignChip design={props.design} onChange={() => props.onChangeDesign(fields, events)} />
+          <DesignChip design={props.design} onChange={() => props.onChangeDesign(fields, events, music)} />
           <Text style={[s.small, { marginBottom: 18 }]}>Leave a box empty to leave that line out. Long lines shrink to fit.</Text>
 
           {cat.sections.map((sec) => (
@@ -136,6 +140,9 @@ export function DetailsScreen(props: {
               <Text style={{ fontFamily: F.semi, fontSize: 15, color: C.maroon, marginLeft: 6 }}>Add another event</Text>
             </Pressable>
           )}
+          <View style={{ marginTop: 26 }}>
+            <MusicPicker tracks={props.tracks} designMusic={props.design.music_title} value={music} onChange={setMusic} />
+          </View>
         </ScrollView>
         <SafeAreaView edges={['bottom']} style={s.footer}>
           <View style={s.column}>

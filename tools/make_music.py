@@ -44,6 +44,30 @@ def clap(amp=0.12):
     return amp * rng.standard_normal(len(t)) * np.exp(-t * 28)
 
 
+def dhum(amp=0.55):  # low dhol stroke with a pitch bend
+    t = np.arange(int(SR * 0.45)) / SR
+    f = 95 * np.exp(-t * 6) + 55
+    return amp * np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 7)
+
+
+def tak(amp=0.22):  # sharp high stroke
+    t = np.arange(int(SR * 0.12)) / SR
+    return amp * (0.6 * rng.standard_normal(len(t)) * np.exp(-t * 60) + np.sin(2 * np.pi * 520 * t) * np.exp(-t * 35))
+
+
+def timpani(amp=0.35):
+    t = np.arange(int(SR * 1.2)) / SR
+    return amp * (np.sin(2 * np.pi * 73 * t) + 0.4 * np.sin(2 * np.pi * 110 * t)) * np.exp(-t * 3.5) * np.minimum(1, t * 200)
+
+
+def strings(freqs, dur, amp=0.05):
+    t = np.arange(int(SR * dur)) / SR
+    env = np.minimum(1, t / 0.9) * np.minimum(1, (dur - t) / 0.7)
+    vib = 1 + 0.003 * np.sin(2 * np.pi * 5.5 * t)
+    sig = sum(sum(np.sin(2 * np.pi * f * h * vib * t + h) / h for h in (1, 2, 3, 4)) for f in freqs)
+    return amp * env * sig / len(freqs)
+
+
 out = np.zeros(int(SR * (SECS + 3)))
 
 
@@ -68,20 +92,53 @@ else:  # party / birthday
     beats_per_bar, pattern = 8, [0, 1, 2, 1, 0, 1, 2, 1]
     bright = 1.1
 
-beat = 60 / bpm / (2 if STYLE == 'party' else 1.5)
+
+if STYLE == 'romantic':
+    bpm, key = 66, 69  # A minor, tender
+    prog = [[-12, 0, 3, 7], [-4, 0, 3, 8], [-9, -2, 3, 7], [-5, -1, 2, 7]]  # i VI III VII (Am F C G)
+    melody = [[12, 15, 14, 12, 10, 12], [8, 12, 15, 17, 15, 12], [7, 10, 12, 15, 14, 10], [7, 11, 14, 12, 11, 7]]
+    beats_per_bar, pattern = 6, [0, 2, 3, 1, 2, 3]
+    bright = 0.7
+elif STYLE == 'royal':
+    bpm, key = 72, 62  # D major, grand
+    prog = [[0, 4, 7], [5, 9, 12], [7, 11, 14], [0, 4, 7], [-3, 0, 4], [5, 9, 12], [7, 11, 14], [7, 11, 14]]
+    melody = [[12, 16, 19, 16], [17, 16, 14, 12], [14, 19, 18, 14], [12, 16, 12, 7],
+              [9, 12, 16, 12], [12, 14, 17, 21], [19, 18, 16, 14], [14, 11, 7, 11]]
+    beats_per_bar, pattern = 4, [0, 1, 2, 1]
+    bright = 0.9
+elif STYLE == 'festive':
+    bpm, key = 118, 62  # D, Kafi-flavoured (b3, b7)
+    prog = [[0, 7, 12], [0, 7, 12], [-2, 5, 10], [0, 7, 12]]
+    melody = [[12, 14, 15, 17, 19, 17, 15, 14], [12, 15, 14, 12, 10, 12, 14, 12],
+              [10, 12, 14, 15, 17, 15, 14, 10], [12, 14, 12, 10, 7, 10, 12, 12]]
+    beats_per_bar, pattern = 8, [0, 1, 2, 1, 0, 1, 2, 1]
+    bright = 1.2
+beat = 60 / bpm / (2 if STYLE in ('party', 'festive') else 1.5 if STYLE in ('lullaby', 'romantic') else 1)
 bar = beat * beats_per_bar
 t, k = 0.0, 0
 while t < SECS:
     chord = prog[k % len(prog)]
     section = (k // 8) % 2  # every 8 bars the melody moves up for variety
-    add(pad([midi(key - 12 + n) for n in chord], bar + 0.6, 0.045), t)
+    if STYLE == 'royal':
+        add(strings([midi(key - 12 + n) for n in chord], bar + 0.8, 0.06), t)
+        if k % 2 == 0:
+            add(timpani(), t)
+    else:
+        add(pad([midi(key - 12 + n) for n in chord], bar + 0.6, 0.045), t)
     for b in range(beats_per_bar):
         add(bell(midi(key - 12 + chord[pattern[b]]), 1.6, 0.11, bright * 0.6), t + b * beat)
         if k >= 2:  # melody enters after two bars
-            note = melody[k % len(melody)][b % len(melody[0])] + (12 if section and STYLE == 'lullaby' else 0)
-            if STYLE == 'lullaby' and b % 2 == 1 and section == 0:
+            note = melody[k % len(melody)][b % len(melody[k % len(melody)])] + (12 if section and STYLE in ('lullaby', 'romantic') else 0)
+            if STYLE in ('lullaby', 'romantic') and b % 2 == 1 and section == 0:
                 continue
             add(bell(midi(key + note), 2.2, 0.16, bright), t + b * beat + 0.004)
+        if STYLE == 'festive' and k >= 1:  # keherwa-style dhol: dha ge na ti | na ka dhi na
+            if b in (0, 3, 6):
+                add(dhum(), t + b * beat)
+            if b in (2, 4, 5, 7):
+                add(tak(), t + b * beat)
+            if b == 1:
+                add(tak(0.12), t + b * beat + beat / 2)
         if STYLE == 'party' and k >= 4:
             if b % 4 == 0:
                 add(kick(), t + b * beat)

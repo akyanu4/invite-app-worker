@@ -1,0 +1,9 @@
+{
+  "tracks": [
+    {"id": "romantic", "title": "Romantic", "mood": "Soft and slow, for Nikah and engagements"},
+    {"id": "royal", "title": "Royal", "mood": "Grand strings, for Valima and receptions"},
+    {"id": "festive", "title": "Festive dhol", "mood": "Dhol beat, for Mehndi and Baraat"},
+    {"id": "party", "title": "Party", "mood": "Bright and upbeat, for birthdays"},
+    {"id": "lullaby", "title": "Lullaby", "mood": "Gentle music box, for babies"}
+  ]
+}
