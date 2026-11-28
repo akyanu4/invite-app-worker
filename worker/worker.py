@@ -292,7 +292,7 @@ def render_scene(tpl, tdir, scene, fields, work, idx):
         pngs.append((p, w, h, s))
 
     cmd = ["ffmpeg", "-v", "error", "-y", "-ss", f"{float(start):.6f}", "-t", f"{float(dur):.6f}",
-           "-i", str(tdir / tpl["background"])]
+           "-i", str(tdir / (scene.get("background_override") or tpl["background"]))]
     for p, *_ in pngs:
         cmd += ["-loop", "1", "-framerate", tpl["fps"], "-t", f"{float(dur):.6f}", "-i", str(p)]
     fc = [f"[0:v]fps={tpl['fps']},setpts=PTS-STARTPTS,format=yuv420p[b0]"]
@@ -312,6 +312,15 @@ def render_scene(tpl, tdir, scene, fields, work, idx):
     return out, float(dur)
 
 
+def event_scene(scene, title):
+    """For designs with "event_backgrounds", each event card uses the background matching its name
+    (e.g. "Haldi Ceremony" -> the Haldi background). Keys are regular expressions."""
+    for pattern, bg in (scene.get("event_backgrounds") or {}).items():
+        if re.search(pattern, title or "", re.I):
+            return {**scene, "background_override": bg}
+    return scene
+
+
 def build_scene_list(tpl, job_fields, events):
     """Expands repeating scenes. Returns [(scene, fields, transition_in)]."""
     items = []
@@ -321,7 +330,7 @@ def build_scene_list(tpl, job_fields, events):
                 f = dict(job_fields)
                 f.update({k: v for k, v in ev.items() if v is not None})
                 tr = sc.get("transition_in", "cut") if i == 0 else sc.get("transition_between", "fadewhite")
-                items.append((sc, f, tr))
+                items.append((event_scene(sc, f.get("title", "")), f, tr))
         else:
             items.append((sc, job_fields, sc.get("transition_in", "cut")))
     return items
@@ -542,6 +551,11 @@ def make_preview(name, force=False):
     if scene.get("repeat") == "events" and events:
         merged.update(events[0])
     work = Path(tempfile.mkdtemp(prefix="preview_"))
+    if tpl.get("preview_events") and scene.get("repeat") == "events":
+        try:
+            return _preview_montage(tpl, tdir, scene, merged, events, out, clip_out, work)
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
     try:
         clip, dur = render_scene(tpl, tdir, scene, merged, work, 0)
         at = dur * tpl.get("preview_at", 0.7)
@@ -557,6 +571,28 @@ def make_preview(name, force=False):
     finally:
         shutil.rmtree(work, ignore_errors=True)
     log("preview ready:", out, f"+ clip ({clip_out.stat().st_size // 1024} KB)")
+    return out
+
+
+def _preview_montage(tpl, tdir, scene, merged, events, out, clip_out, work):
+    """Preview for designs that change background per event: a few event cards one after another."""
+    parts = []
+    for i, title in enumerate(tpl["preview_events"]):
+        f = dict(merged)
+        f.update(events[-1] if events else {})  # the last sample event (a hall), not the mosque
+        f["title"] = title
+        clip, dur = render_scene(tpl, tdir, event_scene(scene, title), f, work, i)
+        part = work / f"part{i}.mp4"
+        run(["ffmpeg", "-v", "error", "-y", "-ss", f"{dur * 0.45:.2f}", "-t", "2.2", "-i", str(clip), "-an",
+             "-vf", "scale=360:-2,fps=24", "-c:v", "libx264", "-preset", "slow", "-crf", "30", "-pix_fmt", "yuv420p", str(part)])
+        if i == 0:
+            run(["ffmpeg", "-v", "error", "-y", "-ss", f"{dur * 0.7:.3f}", "-i", str(clip), "-frames:v", "1",
+                 "-vf", "scale=540:-2", "-q:v", "3", str(out)])
+        parts.append(part)
+    (work / "list.txt").write_text("".join(f"file '{p.as_posix()}'\n" for p in parts))
+    run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(work / "list.txt"), "-c", "copy",
+         "-movflags", "+faststart", str(clip_out)])
+    log("preview ready:", out, f"+ montage clip ({clip_out.stat().st_size // 1024} KB)")
     return out
 
 

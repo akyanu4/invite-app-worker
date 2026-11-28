@@ -3,79 +3,223 @@
     {
       "id": "marriage",
       "title": "Marriage",
-      "subtitle": "Nikah, Valima, Mehndi",
+      "subtitle": "Nikah, Mehndi, Haldi, Valima",
       "icon": "heart-outline",
-      "card_hint": "a wedding invitation (Nikah, Valima, Mehndi, Walima, Shaadi)",
+      "card_hint": "a wedding invitation (Nikah, Valima, Walima, Mehndi, Haldi, Sangeet, Baraat, Shaadi)",
       "sections": [
         {
           "title": "Couple card",
           "fields": [
-            {"key": "couple_title", "label": "Heading", "hint": "VALIMA CEREMONY", "caps": true},
-            {"key": "groom_short", "label": "Groom's short name", "hint": "Ayaan"},
-            {"key": "couple_joiner", "label": "Joining word", "hint": "with"},
-            {"key": "bride_short", "label": "Bride's short name", "hint": "Sara (or: Daughter of)"},
-            {"key": "couple_line", "label": "Small line under names", "hint": "INSHA ALLAH", "caps": true}
+            {
+              "key": "couple_title",
+              "label": "Heading",
+              "hint": "VALIMA CEREMONY",
+              "caps": true
+            },
+            {
+              "key": "groom_short",
+              "label": "Groom's short name",
+              "hint": "Ayaan"
+            },
+            {
+              "key": "couple_joiner",
+              "label": "Joining word",
+              "hint": "with"
+            },
+            {
+              "key": "bride_short",
+              "label": "Bride's short name",
+              "hint": "Sara (or: Daughter of)"
+            },
+            {
+              "key": "couple_line",
+              "label": "Small line under names",
+              "hint": "INSHA ALLAH",
+              "caps": true
+            }
           ]
         },
         {
           "title": "Groom",
           "fields": [
-            {"key": "groom_name", "label": "Full name", "hint": "Mohammed Ayaan Khan"},
-            {"key": "groom_nickname", "label": "Nickname (in brackets)", "hint": "(Ayaan)"},
-            {"key": "groom_relation", "label": "Relation", "hint": "S/O", "caps": true},
-            {"key": "groom_parents_label", "label": "Parents label", "hint": "MRS & MR.", "caps": true},
-            {"key": "groom_father", "label": "Father's name", "hint": "MOHAMMED SALEEM KHAN SAHAB", "caps": true}
+            {
+              "key": "groom_name",
+              "label": "Full name",
+              "hint": "Mohammed Ayaan Khan"
+            },
+            {
+              "key": "groom_nickname",
+              "label": "Nickname (in brackets)",
+              "hint": "(Ayaan)"
+            },
+            {
+              "key": "groom_relation",
+              "label": "Relation",
+              "hint": "S/O",
+              "caps": true
+            },
+            {
+              "key": "groom_parents_label",
+              "label": "Parents label",
+              "hint": "MRS & MR.",
+              "caps": true
+            },
+            {
+              "key": "groom_father",
+              "label": "Father's name",
+              "hint": "MOHAMMED SALEEM KHAN SAHAB",
+              "caps": true
+            }
           ]
         },
         {
           "title": "Bride",
           "fields": [
-            {"key": "bride_name", "label": "Full name", "hint": "Syeda Sara Hussain"},
-            {"key": "bride_relation", "label": "Relation", "hint": "D/O", "caps": true},
-            {"key": "bride_parents_label", "label": "Parents label", "hint": "MRS & MR.", "caps": true},
-            {"key": "bride_father", "label": "Father's name", "hint": "SYED IMRAN HUSSAIN SAHAB", "caps": true}
+            {
+              "key": "bride_name",
+              "label": "Full name",
+              "hint": "Syeda Sara Hussain"
+            },
+            {
+              "key": "bride_relation",
+              "label": "Relation",
+              "hint": "D/O",
+              "caps": true
+            },
+            {
+              "key": "bride_parents_label",
+              "label": "Parents label",
+              "hint": "MRS & MR.",
+              "caps": true
+            },
+            {
+              "key": "bride_father",
+              "label": "Father's name",
+              "hint": "SYED IMRAN HUSSAIN SAHAB",
+              "caps": true
+            }
           ]
         },
         {
           "title": "Save the date",
           "fields": [
-            {"key": "save_line1", "label": "Top line", "hint": "Please"},
-            {"key": "save_title", "label": "Title", "hint": "Save the Date"},
-            {"key": "save_days", "label": "Day(s)", "hint": "Fri & Sun"},
-            {"key": "save_dates", "label": "Date(s)", "hint": "12th & 14th Feb 2027"}
+            {
+              "key": "save_line1",
+              "label": "Top line",
+              "hint": "Please"
+            },
+            {
+              "key": "save_title",
+              "label": "Title",
+              "hint": "Save the Date"
+            },
+            {
+              "key": "save_days",
+              "label": "Day(s)",
+              "hint": "Fri & Sun"
+            },
+            {
+              "key": "save_dates",
+              "label": "Date(s)",
+              "hint": "12th & 14th Feb 2027"
+            }
           ]
         }
       ],
       "events": {
         "title": "Events",
-        "help": "Each event gets its own card in the video.",
+        "help": "Each event gets its own card in the video. Name it clearly (e.g. \"Mehndi Night\", \"Haldi Ceremony\") — the Wedding Journey design picks a matching scene for each.",
         "fields": [
-          {"key": "title", "label": "Event", "hint": "Nikah Ceremony"},
-          {"key": "date", "label": "Date", "hint": "FRI, 12 FEB 2027", "caps": true},
-          {"key": "time", "label": "Time", "hint": "AFTER ASR / DINNER 8:30 PM", "caps": true},
-          {"key": "venue", "label": "Venue", "hint": "MASJID-E-NOOR", "caps": true},
-          {"key": "address1", "label": "Address line 1", "hint": "NEAR CLOCK TOWER, OLD CITY", "caps": true},
-          {"key": "address2", "label": "Address line 2", "hint": "HYDERABAD", "caps": true}
+          {
+            "key": "title",
+            "label": "Event",
+            "hint": "Nikah Ceremony"
+          },
+          {
+            "key": "date",
+            "label": "Date",
+            "hint": "FRI, 12 FEB 2027",
+            "caps": true
+          },
+          {
+            "key": "time",
+            "label": "Time",
+            "hint": "AFTER ASR / DINNER 8:30 PM",
+            "caps": true
+          },
+          {
+            "key": "venue",
+            "label": "Venue",
+            "hint": "MASJID-E-NOOR",
+            "caps": true
+          },
+          {
+            "key": "address1",
+            "label": "Address line 1",
+            "hint": "NEAR CLOCK TOWER, OLD CITY",
+            "caps": true
+          },
+          {
+            "key": "address2",
+            "label": "Address line 2",
+            "hint": "HYDERABAD",
+            "caps": true
+          }
         ]
       },
       "defaults": {
-        "couple_joiner": "with", "groom_label": "THE GROOM", "bride_label": "THE BRIDE", "groom_relation": "S/O",
-        "bride_relation": "D/O", "groom_parents_label": "MRS & MR.", "bride_parents_label": "MRS & MR.",
-        "save_line1": "Please", "save_title": "Save the Date"
+        "couple_joiner": "with",
+        "groom_label": "THE GROOM",
+        "bride_label": "THE BRIDE",
+        "groom_relation": "S/O",
+        "bride_relation": "D/O",
+        "groom_parents_label": "MRS & MR.",
+        "bride_parents_label": "MRS & MR.",
+        "save_line1": "Please",
+        "save_title": "Save the Date"
       },
-      "title_fields": ["groom_short", "groom_name"],
+      "title_fields": [
+        "groom_short",
+        "groom_name"
+      ],
       "sample": {
         "fields": {
-          "couple_title": "VALIMA CEREMONY", "groom_short": "Ayaan", "couple_joiner": "with", "bride_short": "Sara",
-          "couple_line": "INSHA ALLAH", "groom_name": "Mohammed Ayaan Khan", "groom_nickname": "(Ayaan)",
-          "groom_relation": "S/O", "groom_parents_label": "MRS & MR.", "groom_father": "MOHAMMED SALEEM KHAN SAHAB",
-          "bride_name": "Syeda Sara Hussain", "bride_relation": "D/O", "bride_parents_label": "MRS & MR.",
-          "bride_father": "SYED IMRAN HUSSAIN SAHAB", "save_line1": "Please", "save_title": "Save the Dates",
-          "save_days": "Fri & Sun", "save_dates": "12th & 14th Feb 2027"
+          "couple_title": "VALIMA CEREMONY",
+          "groom_short": "Ayaan",
+          "couple_joiner": "with",
+          "bride_short": "Sara",
+          "couple_line": "INSHA ALLAH",
+          "groom_name": "Mohammed Ayaan Khan",
+          "groom_nickname": "(Ayaan)",
+          "groom_relation": "S/O",
+          "groom_parents_label": "MRS & MR.",
+          "groom_father": "MOHAMMED SALEEM KHAN SAHAB",
+          "bride_name": "Syeda Sara Hussain",
+          "bride_relation": "D/O",
+          "bride_parents_label": "MRS & MR.",
+          "bride_father": "SYED IMRAN HUSSAIN SAHAB",
+          "save_line1": "Please",
+          "save_title": "Save the Dates",
+          "save_days": "Fri & Sun",
+          "save_dates": "12th & 14th Feb 2027"
         },
         "events": [
-          {"title": "Nikah Ceremony", "date": "FRI, 12 FEB 2027", "time": "AFTER ASR", "venue": "MASJID-E-NOOR", "address1": "NEAR CLOCK TOWER, OLD CITY", "address2": "HYDERABAD"},
-          {"title": "Valima Ceremony", "date": "SUN, 14 FEB 2027", "time": "DINNER 8:30 PM", "venue": "PEARL PALACE FUNCTION HALL", "address1": "MAIN ROAD, MEHDIPATNAM", "address2": "HYDERABAD"}
+          {
+            "title": "Nikah Ceremony",
+            "date": "FRI, 12 FEB 2027",
+            "time": "AFTER ASR",
+            "venue": "MASJID-E-NOOR",
+            "address1": "NEAR CLOCK TOWER, OLD CITY",
+            "address2": "HYDERABAD"
+          },
+          {
+            "title": "Valima Ceremony",
+            "date": "SUN, 14 FEB 2027",
+            "time": "DINNER 8:30 PM",
+            "venue": "PEARL PALACE FUNCTION HALL",
+            "address1": "MAIN ROAD, MEHDIPATNAM",
+            "address2": "HYDERABAD"
+          }
         ]
       }
     },
@@ -89,18 +233,50 @@
         {
           "title": "Birthday",
           "fields": [
-            {"key": "intro_line", "label": "Top line", "hint": "YOU'RE INVITED TO", "caps": true},
-            {"key": "occasion", "label": "Occasion", "hint": "1st Birthday"},
-            {"key": "name", "label": "Name", "hint": "Zara"},
-            {"key": "wish_line", "label": "Small line", "hint": "CAKE, GAMES AND LOTS OF LOVE", "caps": true}
+            {
+              "key": "intro_line",
+              "label": "Top line",
+              "hint": "YOU'RE INVITED TO",
+              "caps": true
+            },
+            {
+              "key": "occasion",
+              "label": "Occasion",
+              "hint": "1st Birthday"
+            },
+            {
+              "key": "name",
+              "label": "Name",
+              "hint": "Zara"
+            },
+            {
+              "key": "wish_line",
+              "label": "Small line",
+              "hint": "CAKE, GAMES AND LOTS OF LOVE",
+              "caps": true
+            }
           ]
         },
         {
           "title": "Hosts",
           "fields": [
-            {"key": "hosts_label", "label": "Label", "hint": "WITH LOVE FROM", "caps": true},
-            {"key": "hosts", "label": "Hosts", "hint": "Mrs & Mr Ayaan Khan"},
-            {"key": "rsvp", "label": "RSVP / contact", "hint": "RSVP: 98765 43210", "caps": true}
+            {
+              "key": "hosts_label",
+              "label": "Label",
+              "hint": "WITH LOVE FROM",
+              "caps": true
+            },
+            {
+              "key": "hosts",
+              "label": "Hosts",
+              "hint": "Mrs & Mr Ayaan Khan"
+            },
+            {
+              "key": "rsvp",
+              "label": "RSVP / contact",
+              "hint": "RSVP: 98765 43210",
+              "caps": true
+            }
           ]
         }
       ],
@@ -108,24 +284,70 @@
         "title": "Party details",
         "help": "Usually one party. Add more if there are several functions.",
         "fields": [
-          {"key": "title", "label": "Event", "hint": "Birthday Party"},
-          {"key": "date", "label": "Date", "hint": "SAT, 6 MAR 2027", "caps": true},
-          {"key": "time", "label": "Time", "hint": "5:00 PM ONWARDS", "caps": true},
-          {"key": "venue", "label": "Venue", "hint": "FUNTIME PARTY HALL", "caps": true},
-          {"key": "address1", "label": "Address line 1", "hint": "ROAD NO. 12, BANJARA HILLS", "caps": true},
-          {"key": "address2", "label": "Address line 2", "hint": "HYDERABAD", "caps": true}
+          {
+            "key": "title",
+            "label": "Event",
+            "hint": "Birthday Party"
+          },
+          {
+            "key": "date",
+            "label": "Date",
+            "hint": "SAT, 6 MAR 2027",
+            "caps": true
+          },
+          {
+            "key": "time",
+            "label": "Time",
+            "hint": "5:00 PM ONWARDS",
+            "caps": true
+          },
+          {
+            "key": "venue",
+            "label": "Venue",
+            "hint": "FUNTIME PARTY HALL",
+            "caps": true
+          },
+          {
+            "key": "address1",
+            "label": "Address line 1",
+            "hint": "ROAD NO. 12, BANJARA HILLS",
+            "caps": true
+          },
+          {
+            "key": "address2",
+            "label": "Address line 2",
+            "hint": "HYDERABAD",
+            "caps": true
+          }
         ]
       },
-      "defaults": {"intro_line": "YOU'RE INVITED TO", "hosts_label": "WITH LOVE FROM", "closing": "See you there!"},
-      "title_fields": ["name"],
+      "defaults": {
+        "intro_line": "YOU'RE INVITED TO",
+        "hosts_label": "WITH LOVE FROM",
+        "closing": "See you there!"
+      },
+      "title_fields": [
+        "name"
+      ],
       "sample": {
         "fields": {
-          "intro_line": "YOU'RE INVITED TO", "occasion": "1st Birthday", "name": "Zara",
-          "wish_line": "CAKE, GAMES AND LOTS OF LOVE", "hosts_label": "WITH LOVE FROM",
-          "hosts": "Mrs & Mr Ayaan Khan", "rsvp": "RSVP: 98765 43210"
+          "intro_line": "YOU'RE INVITED TO",
+          "occasion": "1st Birthday",
+          "name": "Zara",
+          "wish_line": "CAKE, GAMES AND LOTS OF LOVE",
+          "hosts_label": "WITH LOVE FROM",
+          "hosts": "Mrs & Mr Ayaan Khan",
+          "rsvp": "RSVP: 98765 43210"
         },
         "events": [
-          {"title": "Birthday Party", "date": "SAT, 6 MAR 2027", "time": "5:00 PM ONWARDS", "venue": "FUNTIME PARTY HALL", "address1": "ROAD NO. 12, BANJARA HILLS", "address2": "HYDERABAD"}
+          {
+            "title": "Birthday Party",
+            "date": "SAT, 6 MAR 2027",
+            "time": "5:00 PM ONWARDS",
+            "venue": "FUNTIME PARTY HALL",
+            "address1": "ROAD NO. 12, BANJARA HILLS",
+            "address2": "HYDERABAD"
+          }
         ]
       }
     },
@@ -139,20 +361,61 @@
         {
           "title": "Ceremony",
           "fields": [
-            {"key": "intro_line", "label": "Top line", "hint": "WITH THE BLESSINGS OF ALLAH", "caps": true},
-            {"key": "occasion", "label": "Occasion", "hint": "Naming Ceremony"},
-            {"key": "baby_name", "label": "Baby's name", "hint": "Baby Zara"},
-            {"key": "baby_line", "label": "Small line", "hint": "OUR LITTLE BUNDLE OF JOY", "caps": true}
+            {
+              "key": "intro_line",
+              "label": "Top line",
+              "hint": "WITH THE BLESSINGS OF ALLAH",
+              "caps": true
+            },
+            {
+              "key": "occasion",
+              "label": "Occasion",
+              "hint": "Naming Ceremony"
+            },
+            {
+              "key": "baby_name",
+              "label": "Baby's name",
+              "hint": "Baby Zara"
+            },
+            {
+              "key": "baby_line",
+              "label": "Small line",
+              "hint": "OUR LITTLE BUNDLE OF JOY",
+              "caps": true
+            }
           ]
         },
         {
           "title": "Family",
           "fields": [
-            {"key": "parents_label", "label": "Parents label", "hint": "PROUD PARENTS", "caps": true},
-            {"key": "parents", "label": "Parents", "hint": "Sara & Ayaan Khan"},
-            {"key": "grandparents_label", "label": "Grandparents label", "hint": "GRANDPARENTS", "caps": true},
-            {"key": "grandparents", "label": "Grandparents", "hint": "Mrs & Mr Saleem Khan"},
-            {"key": "rsvp", "label": "RSVP / contact", "hint": "RSVP: 98765 43210", "caps": true}
+            {
+              "key": "parents_label",
+              "label": "Parents label",
+              "hint": "PROUD PARENTS",
+              "caps": true
+            },
+            {
+              "key": "parents",
+              "label": "Parents",
+              "hint": "Sara & Ayaan Khan"
+            },
+            {
+              "key": "grandparents_label",
+              "label": "Grandparents label",
+              "hint": "GRANDPARENTS",
+              "caps": true
+            },
+            {
+              "key": "grandparents",
+              "label": "Grandparents",
+              "hint": "Mrs & Mr Saleem Khan"
+            },
+            {
+              "key": "rsvp",
+              "label": "RSVP / contact",
+              "hint": "RSVP: 98765 43210",
+              "caps": true
+            }
           ]
         }
       ],
@@ -160,24 +423,73 @@
         "title": "Ceremony details",
         "help": "Add each function (for example the ceremony and the dinner).",
         "fields": [
-          {"key": "title", "label": "Event", "hint": "Cradle Ceremony"},
-          {"key": "date", "label": "Date", "hint": "SUN, 14 MAR 2027", "caps": true},
-          {"key": "time", "label": "Time", "hint": "11:00 AM", "caps": true},
-          {"key": "venue", "label": "Venue", "hint": "OUR RESIDENCE", "caps": true},
-          {"key": "address1", "label": "Address line 1", "hint": "FLAT 402, GREEN VALLEY", "caps": true},
-          {"key": "address2", "label": "Address line 2", "hint": "HYDERABAD", "caps": true}
+          {
+            "key": "title",
+            "label": "Event",
+            "hint": "Cradle Ceremony"
+          },
+          {
+            "key": "date",
+            "label": "Date",
+            "hint": "SUN, 14 MAR 2027",
+            "caps": true
+          },
+          {
+            "key": "time",
+            "label": "Time",
+            "hint": "11:00 AM",
+            "caps": true
+          },
+          {
+            "key": "venue",
+            "label": "Venue",
+            "hint": "OUR RESIDENCE",
+            "caps": true
+          },
+          {
+            "key": "address1",
+            "label": "Address line 1",
+            "hint": "FLAT 402, GREEN VALLEY",
+            "caps": true
+          },
+          {
+            "key": "address2",
+            "label": "Address line 2",
+            "hint": "HYDERABAD",
+            "caps": true
+          }
         ]
       },
-      "defaults": {"intro_line": "WITH THE BLESSINGS OF ALLAH", "parents_label": "PROUD PARENTS", "grandparents_label": "GRANDPARENTS", "closing": "Your presence will make it special"},
-      "title_fields": ["baby_name"],
+      "defaults": {
+        "intro_line": "WITH THE BLESSINGS OF ALLAH",
+        "parents_label": "PROUD PARENTS",
+        "grandparents_label": "GRANDPARENTS",
+        "closing": "Your presence will make it special"
+      },
+      "title_fields": [
+        "baby_name"
+      ],
       "sample": {
         "fields": {
-          "intro_line": "WITH THE BLESSINGS OF ALLAH", "occasion": "Naming Ceremony", "baby_name": "Baby Zara",
-          "baby_line": "OUR LITTLE BUNDLE OF JOY", "parents_label": "PROUD PARENTS", "parents": "Sara & Ayaan Khan",
-          "grandparents_label": "GRANDPARENTS", "grandparents": "Mrs & Mr Saleem Khan", "rsvp": "RSVP: 98765 43210"
+          "intro_line": "WITH THE BLESSINGS OF ALLAH",
+          "occasion": "Naming Ceremony",
+          "baby_name": "Baby Zara",
+          "baby_line": "OUR LITTLE BUNDLE OF JOY",
+          "parents_label": "PROUD PARENTS",
+          "parents": "Sara & Ayaan Khan",
+          "grandparents_label": "GRANDPARENTS",
+          "grandparents": "Mrs & Mr Saleem Khan",
+          "rsvp": "RSVP: 98765 43210"
         },
         "events": [
-          {"title": "Cradle Ceremony", "date": "SUN, 14 MAR 2027", "time": "11:00 AM", "venue": "OUR RESIDENCE", "address1": "FLAT 402, GREEN VALLEY", "address2": "HYDERABAD"}
+          {
+            "title": "Cradle Ceremony",
+            "date": "SUN, 14 MAR 2027",
+            "time": "11:00 AM",
+            "venue": "OUR RESIDENCE",
+            "address1": "FLAT 402, GREEN VALLEY",
+            "address2": "HYDERABAD"
+          }
         ]
       }
     },
@@ -191,18 +503,50 @@
         {
           "title": "Baby shower",
           "fields": [
-            {"key": "intro_line", "label": "Top line", "hint": "JOIN US FOR THE", "caps": true},
-            {"key": "occasion", "label": "Occasion", "hint": "Baby Shower"},
-            {"key": "mom_name", "label": "Mother-to-be", "hint": "Sara"},
-            {"key": "tagline", "label": "Small line", "hint": "A LITTLE ONE IS ON THE WAY", "caps": true}
+            {
+              "key": "intro_line",
+              "label": "Top line",
+              "hint": "JOIN US FOR THE",
+              "caps": true
+            },
+            {
+              "key": "occasion",
+              "label": "Occasion",
+              "hint": "Baby Shower"
+            },
+            {
+              "key": "mom_name",
+              "label": "Mother-to-be",
+              "hint": "Sara"
+            },
+            {
+              "key": "tagline",
+              "label": "Small line",
+              "hint": "A LITTLE ONE IS ON THE WAY",
+              "caps": true
+            }
           ]
         },
         {
           "title": "Hosts",
           "fields": [
-            {"key": "hosts_label", "label": "Label", "hint": "HOSTED BY", "caps": true},
-            {"key": "hosts", "label": "Hosts", "hint": "The Khan & Hussain families"},
-            {"key": "rsvp", "label": "RSVP / contact", "hint": "RSVP: 98765 43210", "caps": true}
+            {
+              "key": "hosts_label",
+              "label": "Label",
+              "hint": "HOSTED BY",
+              "caps": true
+            },
+            {
+              "key": "hosts",
+              "label": "Hosts",
+              "hint": "The Khan & Hussain families"
+            },
+            {
+              "key": "rsvp",
+              "label": "RSVP / contact",
+              "hint": "RSVP: 98765 43210",
+              "caps": true
+            }
           ]
         }
       ],
@@ -210,24 +554,70 @@
         "title": "Event details",
         "help": "Usually one event.",
         "fields": [
-          {"key": "title", "label": "Event", "hint": "Godh Bharai"},
-          {"key": "date", "label": "Date", "hint": "SAT, 20 MAR 2027", "caps": true},
-          {"key": "time", "label": "Time", "hint": "4:00 PM", "caps": true},
-          {"key": "venue", "label": "Venue", "hint": "ROSEWOOD BANQUET", "caps": true},
-          {"key": "address1", "label": "Address line 1", "hint": "TOLICHOWKI MAIN ROAD", "caps": true},
-          {"key": "address2", "label": "Address line 2", "hint": "HYDERABAD", "caps": true}
+          {
+            "key": "title",
+            "label": "Event",
+            "hint": "Godh Bharai"
+          },
+          {
+            "key": "date",
+            "label": "Date",
+            "hint": "SAT, 20 MAR 2027",
+            "caps": true
+          },
+          {
+            "key": "time",
+            "label": "Time",
+            "hint": "4:00 PM",
+            "caps": true
+          },
+          {
+            "key": "venue",
+            "label": "Venue",
+            "hint": "ROSEWOOD BANQUET",
+            "caps": true
+          },
+          {
+            "key": "address1",
+            "label": "Address line 1",
+            "hint": "TOLICHOWKI MAIN ROAD",
+            "caps": true
+          },
+          {
+            "key": "address2",
+            "label": "Address line 2",
+            "hint": "HYDERABAD",
+            "caps": true
+          }
         ]
       },
-      "defaults": {"intro_line": "JOIN US FOR THE", "hosts_label": "HOSTED BY", "closing": "We can't wait to celebrate with you"},
-      "title_fields": ["mom_name"],
+      "defaults": {
+        "intro_line": "JOIN US FOR THE",
+        "hosts_label": "HOSTED BY",
+        "closing": "We can't wait to celebrate with you"
+      },
+      "title_fields": [
+        "mom_name"
+      ],
       "sample": {
         "fields": {
-          "intro_line": "JOIN US FOR THE", "occasion": "Baby Shower", "mom_name": "Sara",
-          "tagline": "A LITTLE ONE IS ON THE WAY", "hosts_label": "HOSTED BY", "hosts": "The Khan & Hussain families",
+          "intro_line": "JOIN US FOR THE",
+          "occasion": "Baby Shower",
+          "mom_name": "Sara",
+          "tagline": "A LITTLE ONE IS ON THE WAY",
+          "hosts_label": "HOSTED BY",
+          "hosts": "The Khan & Hussain families",
           "rsvp": "RSVP: 98765 43210"
         },
         "events": [
-          {"title": "Godh Bharai", "date": "SAT, 20 MAR 2027", "time": "4:00 PM", "venue": "ROSEWOOD BANQUET", "address1": "TOLICHOWKI MAIN ROAD", "address2": "HYDERABAD"}
+          {
+            "title": "Godh Bharai",
+            "date": "SAT, 20 MAR 2027",
+            "time": "4:00 PM",
+            "venue": "ROSEWOOD BANQUET",
+            "address1": "TOLICHOWKI MAIN ROAD",
+            "address2": "HYDERABAD"
+          }
         ]
       }
     }

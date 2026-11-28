@@ -9,7 +9,7 @@ import cv2
 from PIL import Image, ImageDraw, ImageFilter
 
 W, H = 1080, 1920
-STYLES = ('nikah', 'mehndi', 'valima', 'baraat')
+STYLES = ('nikah', 'mehndi', 'valima', 'baraat', 'haldi', 'sangeet')
 
 
 def rgba_layer(size, fn, scale=2):
@@ -374,6 +374,123 @@ class Style:
             if fw:
                 g = glow_dots(fw, 2.4)
                 img += g[..., None] * np.array(col, np.float32) * 1.5
+        return img
+
+    # ------------------------------------------------------------------ HALDI / MANJHA: turmeric yellow, drapes, marigold & motia
+    def setup_haldi(self):
+        Y, X = np.mgrid[0:H, 0:W].astype(np.float32)
+        r = np.clip(np.sqrt(((X - W / 2) / (W * 0.85)) ** 2 + ((Y - H * 0.48) / (H * 0.62)) ** 2), 0, 1)
+        r = (r * r * (3 - 2 * r))[..., None]  # smooth falloff
+        # deeper saffron behind the text so gold letters stay readable; bright turmeric at the edges
+        self.base = np.array([200, 104, 14], np.float32) * (1 - r) + np.array([246, 190, 48], np.float32) * r
+        self.text_light = False
+        gold = (236, 200, 110)
+
+        def drapes(d, s):  # yellow and orange fabric swags at the top, gathered at the corners
+            R = lambda v: int(v * s)
+            for col, depth, alpha in (((236, 120, 18), 230, 235), ((252, 206, 52), 175, 245)):
+                pts = [(0, 0), (W, 0)]
+                for k in range(61):
+                    t = k / 60
+                    x = W - W * t
+                    y = depth * math.sin(math.pi * t) ** 0.8 * (1 - 0.15 * math.cos(2 * math.pi * t))
+                    pts.append((x, y))
+                d.polygon([(R(x), R(y)) for x, y in pts], fill=col + (alpha,))
+                d.line([(R(x), R(y)) for x, y in pts[2:]], fill=gold + (255,), width=R(4))
+            for cx in (40, W - 40):  # gathered fabric hanging down the sides
+                d.polygon([(R(cx - 34), R(0)), (R(cx + 34), R(0)), (R(cx + 22), R(470)), (R(cx - 22), R(470))], fill=(236, 120, 18, 235))
+                d.line([(R(cx - 22), R(470)), (R(cx + 22), R(470))], fill=gold + (255,), width=R(4))
+                d.ellipse([R(cx - 30), R(120), R(cx + 30), R(170)], fill=gold + (255,))  # gold tie
+        self.baked = [to_f(rgba_layer((W, H), drapes))]
+        self.flower = {}
+        for name, col, rad in (('o', (243, 128, 22), 8), ('y', (255, 214, 40), 8), ('w', (252, 250, 240), 6)):
+            def fl(d, s, col=col, rad=rad):
+                R = lambda v: int(v * s)
+                for k in range(10):
+                    a = 2 * math.pi * k / 10
+                    x, y = 15 + rad * math.cos(a), 15 + rad * math.sin(a)
+                    d.ellipse([R(x - rad + 1), R(y - rad + 1), R(x + rad - 1), R(y + rad - 1)], fill=col + (255,))
+                d.ellipse([R(10), R(10), R(20), R(20)], fill=tuple(int(c * 0.85) for c in col) + (255,))
+            self.flower[name] = to_f(rgba_layer((30, 30), fl))
+        P = 50
+        self.px, self.py = self.rng.uniform(0, W, P), self.rng.uniform(0, H, P)
+        self.pv, self.pph = self.rng.uniform(1.3, 2.8, P), self.rng.uniform(0, 6.28, P)
+        self.pc = [(255, 200, 30), (243, 128, 22), (255, 250, 236)]
+        # marigold + motia strings hanging inside the drapes
+        self.strands = [(110, 300, 0.0), (175, 220, 1.4), (W - 110, 300, 0.8), (W - 175, 220, 2.1)]
+
+    def draw_haldi(self, img, f):
+        for x0, length, ph in self.strands:
+            n = int(length / 24)
+            for i in range(n):
+                d = i / n
+                x = x0 + 14 * math.sin(f * 0.04 + ph) * d ** 1.3
+                paste(img, self.flower['w' if i % 3 == 1 else ('o' if i % 3 == 0 else 'y')], int(x - 15), int(200 + i * 24 - 15))
+        # bottom garland of marigold and motia in scallops
+        for k in range(26):
+            x = 50 + k * 38.8
+            sag = 46 * math.sin(math.pi * ((x - 50) % 330) / 330)
+            y = 1730 - sag + 3 * math.sin(f * 0.05 + k)
+            paste(img, self.flower['owy'[k % 3]], int(x - 15), int(y - 15))
+        for i in range(len(self.px)):
+            y = (self.py[i] + self.pv[i] * f) % (H + 40) - 20
+            x = (self.px[i] + 30 * math.sin(self.pph[i] + f * 0.03)) % W
+            if 560 < y < 1300 and 240 < x < W - 240:
+                continue
+            ang = (self.pph[i] * 57 + f * 3) % 180
+            cv2.ellipse(img, (int(x), int(y)), (8, 4), ang, 0, 360, self.pc[i % 3], -1, cv2.LINE_AA)
+        return img
+
+    # ------------------------------------------------------------------ SANGEET: night, fairy lights, spotlights, notes
+    def setup_sangeet(self):
+        Y, X = np.mgrid[0:H, 0:W].astype(np.float32)
+        r = np.clip(np.sqrt(((X - W / 2) / (W * 0.75)) ** 2 + ((Y - H * 0.5) / (H * 0.6)) ** 2), 0, 1)[..., None]
+        self.base = np.array([70, 28, 104], np.float32) * (1 - r) + np.array([12, 6, 32], np.float32) * r
+        self.text_light = False
+        self.X, self.Y = X, Y
+        # fairy-light curtains down both sides
+        self.lights = []
+        for x0 in list(range(70, 250, 36)) + list(range(W - 70, W - 250, -36)):
+            length = self.rng.uniform(900, 1700)
+            for yy in np.arange(60, length, 34):
+                self.lights.append((x0 + self.rng.uniform(-3, 3), yy, self.rng.uniform(0, 6.28)))
+        # scalloped light drape across the top
+        for seg in range(4):
+            for t in np.linspace(0, 1, 9):
+                x = 60 + (W - 120) * (seg + t) / 4
+                self.lights.append((x, 70 + 70 * math.sin(math.pi * t), self.rng.uniform(0, 6.28)))
+
+        def note_img(d, s):
+            R = lambda v: int(v * s)
+            g = (240, 204, 120, 255)
+            d.ellipse([R(4), R(40), R(26), R(56)], fill=g)
+            d.line([(R(24), R(48)), (R(24), R(6))], fill=g, width=R(4))
+            d.polygon([(R(24), R(6)), (R(40), R(16)), (R(40), R(26)), (R(24), R(16))], fill=g)
+        self.note = rgba_layer((44, 60), note_img)
+        N = 10
+        self.nx = self.rng.choice([self.rng.uniform(120, 260), self.rng.uniform(W - 260, W - 120)], N) if False else \
+            np.array([self.rng.uniform(110, 250) if i % 2 else self.rng.uniform(W - 250, W - 110) for i in range(N)])
+        self.ny, self.nph = self.rng.uniform(0, H, N), self.rng.uniform(0, 6.28, N)
+
+    def draw_sangeet(self, img, f):
+        # two stage spotlights sweeping up from the bottom corners
+        for side, ph in ((0, 0.0), (1, 2.0)):
+            ox, oy = (120, H + 60) if side == 0 else (W - 120, H + 60)
+            ang = math.radians(-90 + (25 if side == 0 else -25) + 18 * math.sin(f * 0.02 + ph))
+            dx, dy = math.cos(ang), math.sin(ang)
+            vx, vy = self.X - ox, self.Y - oy
+            along = vx * dx + vy * dy
+            across = np.abs(vx * -dy + vy * dx)
+            cone = np.clip(1 - across / (0.16 * np.maximum(along, 1)), 0, 1) * (along > 0) * np.exp(-along / 1500)
+            img += (cone ** 1.5)[..., None] * np.array([90, 60, 120]) * 0.55
+        pts = [(x, y, 4, 0.45 + 0.55 * max(0.0, math.sin(f * 0.15 + ph))) for x, y, ph in self.lights]
+        g = glow_dots(pts, 2.6)
+        img += g[..., None] * np.array([255, 214, 150]) * 0.75
+        for i in range(len(self.nx)):
+            y = (self.ny[i] - 1.6 * f) % (H + 80) - 40
+            x = self.nx[i] + 22 * math.sin(self.nph[i] + f * 0.03)
+            a = 0.85 * min(1.0, (H - y) / 300, max(0.0, y) / 300)
+            paste(img, to_f(self.note), int(x), int(y), a)
         return img
 
     def bake(self):
